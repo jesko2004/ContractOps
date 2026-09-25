@@ -1,0 +1,98 @@
+schema_version = 1
+
+# Copy this file to routes.cloud.toml, keep secrets in environment variables,
+# and change the Compose volume to mount it as /etc/edumind/routes.toml.
+
+[llm_clients.qwen]
+format = "openai_chat"
+base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+api_key_env = "QWEN_API_KEY"
+max_retries = 2
+timeout_ms = 120000
+
+[llm_clients.deepseek]
+format = "openai_chat"
+base_url = "https://api.deepseek.com/v1"
+api_key_env = "DEEPSEEK_API_KEY"
+max_retries = 2
+timeout_ms = 120000
+
+[llm_clients.doubao]
+format = "openai_chat"
+base_url = "https://ark.cn-beijing.volces.com/api/v3"
+api_key_env = "DOUBAO_API_KEY"
+max_retries = 2
+timeout_ms = 120000
+
+[llm_clients.vllm]
+format = "openai_chat"
+base_url = "http://host.docker.internal:8000/v1"
+max_retries = 1
+timeout_ms = 120000
+
+[llm_clients.ollama]
+format = "openai_chat"
+base_url = "http://host.docker.internal:11434/v1"
+max_retries = 1
+timeout_ms = 120000
+
+[targets.qwen]
+id = "qwen-plus"
+llm_client = "qwen"
+
+[targets.deepseek]
+id = "deepseek-chat"
+llm_client = "deepseek"
+
+# Replace this value with the endpoint ID from your Doubao deployment.
+[targets.doubao]
+id = "YOUR_DOUBAO_ENDPOINT_ID"
+llm_client = "doubao"
+
+# Replace these IDs with models served by your local runtimes.
+[targets.vllm]
+id = "YOUR_VLLM_MODEL_ID"
+llm_client = "vllm"
+
+[targets.ollama]
+id = "qwen3:8b"
+llm_client = "ollama"
+
+[routes.qwen]
+id = "edumind/qwen"
+type = "passthrough"
+target = "qwen"
+tool_calling = true
+
+[routes.deepseek]
+id = "edumind/deepseek"
+type = "passthrough"
+target = "deepseek"
+tool_calling = true
+
+[routes.doubao]
+id = "edumind/doubao"
+type = "passthrough"
+target = "doubao"
+tool_calling = true
+
+[routes.vllm]
+id = "edumind/vllm"
+type = "passthrough"
+target = "vllm"
+tool_calling = true
+
+[routes.ollama]
+id = "edumind/ollama"
+type = "passthrough"
+target = "ollama"
+tool_calling = true
+
+# The automatic route uses a low-cost local model first and escalates to Qwen
+# when Switchyard detects that the task needs a more capable model.
+[routes.auto]
+id = "edumind/auto"
+type = "auto"
+capable_target = "qwen"
+efficient_target = "ollama"
+tool_calling = true

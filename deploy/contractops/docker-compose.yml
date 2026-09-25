@@ -1,0 +1,86 @@
+services:
+  contract-api:
+    build:
+      context: ../../services/contract-api
+    environment:
+      CONTRACTOPS_ENVIRONMENT: development
+      CONTRACTOPS_DATABASE_URL: postgresql://contractops_app:contractops-app-dev@postgres:5432/contractops
+      CONTRACTOPS_REDIS_URL: redis://redis:6379/0
+      CONTRACTOPS_OBJECT_STORE_ENDPOINT: http://minio:9000
+      CONTRACTOPS_OBJECT_STORE_ACCESS_KEY: contractops
+      CONTRACTOPS_OBJECT_STORE_SECRET_KEY: contractops-dev-secret
+      CONTRACTOPS_OBJECT_STORE_BUCKET: contractops
+      CONTRACTOPS_MODEL_BASE_URL: http://host.docker.internal:4000/v1
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8080/health/live')"
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: contractops
+      POSTGRES_USER: contractops_admin
+      POSTGRES_PASSWORD: contractops-admin-dev
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U contractops_admin -d contractops"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "55432:5432"
+    volumes:
+      - contractops-postgres:/var/lib/postgresql/data
+      - ./init/000_roles.sql:/docker-entrypoint-initdb.d/000_roles.sql:ro
+      - ../../services/contract-api/migrations/0001_initial.sql:/docker-entrypoint-initdb.d/001_initial.sql:ro
+      - ./init/002_grants.sql:/docker-entrypoint-initdb.d/002_grants.sql:ro
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    ports:
+      - "56379:6379"
+    volumes:
+      - contractops-redis:/data
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: contractops
+      MINIO_ROOT_PASSWORD: contractops-dev-secret
+    ports:
+      - "59000:9000"
+      - "59001:9001"
+    volumes:
+      - contractops-minio:/data
+    restart: unless-stopped
+
+volumes:
+  contractops-postgres:
+  contractops-redis:
+  contractops-minio:

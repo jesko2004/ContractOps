@@ -1,0 +1,30 @@
+schema_version = 1
+
+# Docker Desktop exposes services running on the host through this name.
+# Ollama must expose its OpenAI-compatible endpoint on port 11434.
+[llm_clients.ollama]
+format = "openai_chat"
+base_url = "http://host.docker.internal:11434/v1"
+max_retries = 1
+timeout_ms = 120000
+
+[targets.efficient]
+id = "qwen3:8b"
+llm_client = "ollama"
+
+[targets.capable]
+id = "qwen3:32b"
+llm_client = "ollama"
+
+[routes.fast]
+id = "edumind-fast"
+type = "passthrough"
+target = "efficient"
+tool_calling = true
+
+[routes.auto]
+id = "edumind-auto"
+type = "auto"
+capable_target = "capable"
+efficient_target = "efficient"
+tool_calling = true
