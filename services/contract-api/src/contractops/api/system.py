@@ -1,8 +1,9 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from contractops.config import Settings, get_settings
-
+from contractops.config import Settings, get_request_settings
 
 router = APIRouter(prefix="/system", tags=["system"])
 
@@ -14,7 +15,7 @@ class SystemInfo(BaseModel):
 
 
 @router.get("/info", response_model=SystemInfo)
-async def system_info(settings: Settings = Depends(get_settings)) -> SystemInfo:
+async def system_info(settings: Annotated[Settings, Depends(get_request_settings)]) -> SystemInfo:
     return SystemInfo(
         name=settings.app_name,
         version=settings.version,

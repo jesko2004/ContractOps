@@ -173,7 +173,7 @@ def configure_document(doc: Document) -> None:
     header = section.header
     header_paragraph = header.paragraphs[0]
     header_paragraph.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    run = header_paragraph.add_run("ContractOps 项目更新记录  版本 0.2")
+    run = header_paragraph.add_run("ContractOps 项目更新记录  版本 0.4")
     set_run_font(run, size=8.5, color=BLACK)
 
     footer = section.footer
@@ -289,7 +289,7 @@ def add_cover(doc: Document) -> None:
         ["项目字段", "当前内容"],
         [
             ["项目名称", "ContractOps 企业合同审批与履约风控后端服务"],
-            ["文档版本", "0.2"],
+            ["文档版本", "0.4"],
             ["最后更新", "2026 年 9 月 25 日"],
             ["维护方式", "每次源代码更新后追加一条更新记录 不覆盖历史决策"],
             ["主要读者", "项目开发者 代码评审者 面试准备人员"],
@@ -365,6 +365,20 @@ def add_foundation_sections(doc: Document) -> None:
                 "重写业务边界 服务架构 八周计划和优先任务",
                 "文档一致性和结构已检查 运行验证待后续实现",
             ],
+            [
+                "UPD 003",
+                "2026 09 25",
+                "完成 M0 工程基线",
+                "加入 Alembic 请求上下文 错误协议 测试编排和专用 CI",
+                "Ruff mypy 和 24 项单测通过 数据库往返待 CI",
+            ],
+            [
+                "UPD 004",
+                "2026 09 25",
+                "修复上游 CI 脚本执行权限失败",
+                "改为由 Bash 显式调用并消除对 Git 可执行位的依赖",
+                "本地复现成功路径和预期失败路径 GitHub 复跑待推送",
+            ],
         ],
         widths=[0.7, 0.9, 2.0, 2.1, 1.35],
         font_size=8.8,
@@ -385,7 +399,6 @@ def add_foundation_sections(doc: Document) -> None:
 
 
 def add_update_001(doc: Document) -> None:
-    doc.add_page_break()
     add_heading(doc, "五 更新记录 UPD 001", 1)
     add_heading(doc, "五一 更新目标", 2)
     add_paragraph(
@@ -699,8 +712,177 @@ def add_update_002(doc: Document) -> None:
     )
 
 
+def add_update_003(doc: Document) -> None:
+    add_heading(doc, "七 更新记录 UPD 003", 1)
+
+    add_heading(doc, "七一 更新目标", 2)
+    add_paragraph(
+        doc,
+        "本次更新执行实施计划的 M0 工程基线 建立后续业务开发必须复用的应用入口 "
+        "错误协议 请求上下文 数据库迁移 测试环境和持续集成入口",
+    )
+
+    add_heading(doc, "七二 方案选择过程", 2)
+    add_table(
+        doc,
+        ["决策项", "候选方案", "最终选择", "选择依据"],
+        [
+            ["迁移管理", "继续使用容器初始化 SQL 或改用 ORM 自动建表", "Alembic 调用已评审 SQL", "保留 RLS 部分索引和 pgvector 等 PostgreSQL 能力 同时获得版本和回滚"],
+            ["请求上下文", "BaseHTTPMiddleware 或纯 ASGI", "纯 ASGI 加 ContextVar", "避免中间件任务边界造成上下文传播差异 并为 M1 租户身份预留入口"],
+            ["错误协议", "各接口自行返回或全局处理", "全局稳定错误信封", "统一错误码 消息 请求 ID 和可选详情 方便客户端和审计关联"],
+            ["数据库启动", "PostgreSQL 初始化目录直接执行建表 SQL", "一次性 migrate 服务", "迁移版本成为唯一事实来源 API 只在迁移成功后启动"],
+            ["持续集成", "塞入上游大型 CI 或单独建立门禁", "路径过滤的 ContractOps API CI", "缩短反馈时间并避免 ContractOps 检查依赖整个 OpenMAIC 构建"],
+        ],
+        widths=[1.15, 1.75, 1.65, 2.45],
+        font_size=8.3,
+    )
+
+    add_heading(doc, "七三 已完成实现", 2)
+    add_table(
+        doc,
+        ["区域", "实现内容", "主要文件"],
+        [
+            ["应用基线", "可注入 Settings 的应用工厂 纯 ASGI 请求上下文和请求 ID", "main py context py request context py"],
+            ["错误处理", "领域异常 参数错误 HTTP 错误和未知错误使用同一响应结构", "errors py 和 test errors py"],
+            ["领域规则", "实现计划书中的合同生命周期和非法迁移拒绝", "domain contract py 和状态机测试"],
+            ["迁移管理", "Alembic 基线 升级 SQL 回滚 SQL和重复升级回滚验证脚本", "alembic ini migrations 和 verify migrations py"],
+            ["本地编排", "开发 Compose 使用 migrate 服务 新增隔离测试 Compose", "deploy contractops 下两个 Compose 文件"],
+            ["持续集成", "加入 Ruff mypy pytest 空库迁移和 Compose 配置检查", "contractops api yml"],
+            ["稳定入口", "一个命令运行静态检查 类型检查 单测和可选迁移验证", "scripts check py"],
+            ["项目说明", "同步根说明中的 M0 已完成能力 启动顺序和统一检查命令", "README CONTRACTOPS"],
+        ],
+        widths=[1.2, 3.45, 2.35],
+        font_size=8.5,
+    )
+
+    add_heading(doc, "七四 关键难点", 2)
+
+    add_heading(doc, "迁移需要兼容 PostgreSQL 专有结构", 3)
+    add_paragraph(
+        doc,
+        "现有建表语句包含 pgvector HNSW 索引 生成列 延迟外键和动态 RLS 策略 "
+        "如果立即改写为 ORM 元数据 容易遗漏约束或改变执行语义 本次让 Alembic 管理经过评审的 SQL 文件 "
+        "后续迁移仍使用明确的升级和回滚脚本",
+    )
+
+    add_heading(doc, "运行角色不能承担迁移权限", 3)
+    add_paragraph(
+        doc,
+        "扩展创建 表结构和 RLS 策略需要高于应用运行角色的权限 因此配置单独的 "
+        "CONTRACTOPS MIGRATION DATABASE URL Compose 中由短生命周期 migrate 服务使用 "
+        "常驻 API 继续使用 contractops app",
+    )
+
+    add_heading(doc, "请求 ID 必须覆盖错误响应", 3)
+    add_paragraph(
+        doc,
+        "请求 ID 如果只在正常响应后添加 异常路径会缺少关联标识 本次中间件在 ASGI response start 阶段统一写入响应头 "
+        "错误处理器从请求状态读取同一个值 因此领域错误 404 和参数错误都能返回相同请求 ID",
+    )
+
+    add_heading(doc, "当前机器没有 Docker 和 PostgreSQL", 3)
+    add_paragraph(
+        doc,
+        "本机无法执行真实 pgvector 数据库的升级回滚循环 因此本次没有把迁移往返写成通过 "
+        "已新增隔离测试 Compose 和 GitHub Actions 数据库服务 CI 会在空库执行两次升级 回滚到 base 再升级到 head",
+    )
+
+    add_heading(doc, "七五 验证结果", 2)
+    add_table(
+        doc,
+        ["验证项", "结果", "证据或限制"],
+        [
+            ["Ruff", "通过", "src tests scripts migrations 全部通过"],
+            ["mypy strict", "通过", "15 个 Python 源文件无类型错误"],
+            ["pytest", "通过", "24 项测试通过 覆盖 API 错误 请求上下文和两个状态机"],
+            ["Alembic 版本发现", "通过", "history 正确识别 20260925 0001 head"],
+            ["YAML 解析", "通过", "开发 Compose 测试 Compose 和专用 CI 均可解析"],
+            ["Python compileall", "通过", "src tests scripts migrations 可以编译"],
+            ["真实数据库迁移往返", "未执行", "本机无 Docker 和 PostgreSQL 由新增 CI 执行"],
+            ["测试 Compose 启动", "未执行", "本机无 Docker"],
+        ],
+        widths=[1.75, 1.0, 4.2],
+        font_size=8.8,
+    )
+
+    add_heading(doc, "七六 下一步", 2)
+    add_numbered(
+        doc,
+        [
+            "在 GitHub Actions 或具备 Docker 的环境确认空库迁移和回滚测试通过",
+            "进入 M1 实现 JWT 租户上下文 RBAC 部门数据范围和事务级 RLS 设置",
+            "实现 Contract 与 ContractVersion Repository 以及创建 查询和新增版本接口",
+            "补充两个租户互相读取和重复请求不产生重复版本的集成测试",
+        ],
+    )
+
+
+def add_update_004(doc: Document) -> None:
+    add_heading(doc, "八 更新记录 UPD 004", 1)
+
+    add_heading(doc, "八一 更新目标", 2)
+    add_paragraph(
+        doc,
+        "修复 GitHub Actions 中 Lint Typecheck 与 Unit Tests 任务在 Parallel runner self test 步骤立即失败的问题 "
+        "使上游前端检查能够继续执行并避免 Windows 上传方式再次触发同类错误",
+    )
+
+    add_heading(doc, "八二 问题定位", 2)
+    add_paragraph(
+        doc,
+        "公开 GitHub Actions API 显示运行 36132265036 的任务 108063921078 在第三步返回退出码 126 "
+        "后续依赖安装 静态检查和单元测试因此全部跳过 本地 Git 索引显示 scripts ci run parallel sh 的模式为 100644 "
+        "Ubuntu runner 直接执行该文件时没有执行权限",
+    )
+
+    add_heading(doc, "八三 方案选择", 2)
+    add_table(
+        doc,
+        ["候选方案", "优点", "限制", "决定"],
+        [
+            ["将脚本模式改为 100755", "保留原工作流调用形式", "Windows 或 GitHub API 上传可能再次丢失可执行位", "不单独采用"],
+            ["工作流显式使用 Bash", "不依赖文件模式 对不同上传方式稳定", "要求 Ubuntu runner 提供 Bash", "采用"],
+            ["在运行前执行 chmod", "可以继续直接运行脚本", "增加无必要的工作区修改并掩盖调用约束", "不采用"],
+        ],
+        widths=[1.75, 2.0, 2.25, 1.0],
+        font_size=8.7,
+    )
+
+    add_heading(doc, "八四 实现内容", 2)
+    add_paragraph(
+        doc,
+        "修改 github workflows ci yml 中三处调用 在 Parallel runner self test 的成功和预期失败分支以及并行质量检查入口前增加 bash "
+        "脚本内容和任务并发语义保持不变",
+    )
+
+    add_heading(doc, "八五 验证结果", 2)
+    add_table(
+        doc,
+        ["验证项", "结果", "证据或限制"],
+        [
+            ["失败原因核对", "通过", "GitHub 检查注释为退出码 126 且失败发生在直接执行脚本的第一步"],
+            ["成功路径自检", "通过", "Git Bash 执行两个成功命令并返回零"],
+            ["预期失败路径", "通过", "内部命令退出 7 时并行运行器汇总后返回 1"],
+            ["工作流差异检查", "通过", "三处调用均改为 bash scripts ci run parallel sh"],
+            ["GitHub Actions 复跑", "未执行", "修改尚未提交和推送"],
+        ],
+        widths=[1.65, 1.0, 4.3],
+        font_size=8.8,
+    )
+
+    add_heading(doc, "八六 后续动作", 2)
+    add_numbered(
+        doc,
+        [
+            "提交并推送 CI 修复以及当前 ContractOps M0 修改",
+            "观察新的 CI 运行是否继续通过依赖安装和完整质量检查",
+            "若出现后续错误 按实际失败步骤新增记录而不是覆盖本次根因",
+        ],
+    )
+
+
 def add_decisions_and_risks(doc: Document) -> None:
-    add_heading(doc, "七 当前决策记录", 1)
+    add_heading(doc, "九 当前决策记录", 1)
     add_table(
         doc,
         ["编号", "决策", "原因", "重新评估条件"],
@@ -713,12 +895,15 @@ def add_decisions_and_risks(doc: Document) -> None:
             ["ADR 006", "关键法律和审批决定由人完成", "模型输出存在错误和法律责任边界", "不能删除"],
             ["ADR 007", "主线改为审批与履约风控", "避免退化为 PDF 检查工具并突出企业后端能力", "审批或履约场景无法形成可运行闭环"],
             ["ADR 008", "审批实例保存策略快照", "避免流程中途因策略变更产生不一致", "只允许优化快照存储方式"],
+            ["ADR 009", "Alembic 管理数据库版本", "让升级 回滚和部署顺序可以复现", "不能退回容器初始化目录直接建业务表"],
+            ["ADR 010", "统一错误信封和请求上下文", "客户端和审计可以依靠稳定错误码和请求 ID", "只允许兼容性扩展"],
+            ["ADR 011", "CI Shell 脚本由 Bash 显式调用", "避免 Windows 和 API 上传丢失可执行位", "只有上传链路稳定保留 100755 时才评估简化"],
         ],
         widths=[0.8, 1.6, 2.6, 1.9],
         font_size=8.7,
     )
 
-    add_heading(doc, "八 风险登记", 1)
+    add_heading(doc, "十 风险登记", 1)
     add_table(
         doc,
         ["风险", "影响", "当前控制", "后续验证"],
@@ -730,6 +915,8 @@ def add_decisions_and_risks(doc: Document) -> None:
             ["重复任务和提醒", "重复审查 重复通知", "幂等表 Outbox 唯一键设计", "Worker 崩溃和重复投递测试"],
             ["解析定位错误", "引用页码不准确", "保存版本 Chunk 页码和 parser version", "人工标注样本比对"],
             ["合同修订覆盖历史", "审计链丢失", "版本不可变 驳回后创建新版本", "版本 Diff 和回滚测试"],
+            ["迁移权限泄露给运行服务", "应用漏洞可能修改结构或绕过隔离", "迁移 URL 与运行 URL 分离 migrate 服务短期运行", "CI 检查运行角色权限和生产密钥配置"],
+            ["跨平台文件模式丢失", "Linux CI 脚本在任务开始时退出 126", "工作流显式使用 Bash 调用脚本", "每次迁移上传方式后观察 CI 自检"],
         ],
         widths=[1.45, 1.55, 2.45, 1.45],
         font_size=8.7,
@@ -737,7 +924,7 @@ def add_decisions_and_risks(doc: Document) -> None:
 
 
 def add_update_template(doc: Document) -> None:
-    add_heading(doc, "九 后续更新记录模板", 1)
+    add_heading(doc, "十一 后续更新记录模板", 1)
     add_paragraph(
         doc,
         "复制本节并替换方括号内容 新记录必须追加在历史记录之后 不修改已经完成的决策说明",
@@ -796,6 +983,8 @@ def build_document(output_path: Path) -> None:
     add_foundation_sections(document)
     add_update_001(document)
     add_update_002(document)
+    add_update_003(document)
+    add_update_004(document)
     add_decisions_and_risks(document)
     add_update_template(document)
 

@@ -12,8 +12,8 @@ services:
       CONTRACTOPS_OBJECT_STORE_BUCKET: contractops
       CONTRACTOPS_MODEL_BASE_URL: http://host.docker.internal:4000/v1
     depends_on:
-      postgres:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
       minio:
@@ -33,6 +33,18 @@ services:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
 
+  migrate:
+    build:
+      context: ../../services/contract-api
+      target: runtime
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      CONTRACTOPS_MIGRATION_DATABASE_URL: postgresql://contractops_admin:contractops-admin-dev@postgres:5432/contractops
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
   postgres:
     image: pgvector/pgvector:pg16
     environment:
@@ -49,7 +61,6 @@ services:
     volumes:
       - contractops-postgres:/var/lib/postgresql/data
       - ./init/000_roles.sql:/docker-entrypoint-initdb.d/000_roles.sql:ro
-      - ../../services/contract-api/migrations/0001_initial.sql:/docker-entrypoint-initdb.d/001_initial.sql:ro
       - ./init/002_grants.sql:/docker-entrypoint-initdb.d/002_grants.sql:ro
     restart: unless-stopped
 

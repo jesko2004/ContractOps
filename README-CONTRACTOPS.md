@@ -10,7 +10,7 @@ ContractOps 是一个面向企业法务、财务、采购和业务团队的后�
 ## 当前骨架
 
 ```text
-EduMind/
+ContractOps/
 ├─ services/
 │  ├─ contract-api/              # 合同、审批、履约与风控 API
 │  │  ├─ src/contractops/
@@ -27,11 +27,12 @@ EduMind/
 
 当前代码已经建立：
 
-- FastAPI 应用工厂、健康检查和请求 ID 中间件；
-- 合同审查状态机及单元测试，后续将拆分为合同生命周期和审批实例状态机；
-- PostgreSQL/pgvector 初始数据模型；
-- PostgreSQL、Redis、MinIO 和 API 的本地 Compose；
-- 产品边界、API 草案、里程碑和验收标准。
+- 可注入配置的 FastAPI 应用工厂、健康检查、纯 ASGI 请求上下文和统一错误信封；
+- 合同生命周期状态机及非法迁移测试，同时保留早期审查状态机作为历史兼容代码；
+- 由 Alembic 管理的 PostgreSQL/pgvector 初始数据模型、升级与回滚脚本；
+- 带一次性 `migrate` 服务的开发 Compose，以及隔离的测试 Compose；
+- ContractOps API 专用 CI，执行 Ruff、mypy、pytest、空库迁移往返和 Compose 配置检查；
+- 产品边界、API 草案、里程碑、验收标准和持续更新记录。
 
 尚未实现：身份认证、数据库 Repository、审批策略与待办接口、可靠事件、履约调度、
 风险升级和通知适配器。文档解析和模型调用安排在核心业务闭环完成之后。骨架不会把
@@ -50,6 +51,13 @@ python -m venv .venv
 .venv/Scripts/uvicorn contractops.main:app --reload --port 8080
 ```
 
+提交代码前可运行统一检查入口：
+
+```bash
+cd services/contract-api
+.venv/Scripts/python scripts/check.py
+```
+
 访问：
 
 - `GET http://localhost:8080/health/live`
@@ -62,6 +70,9 @@ python -m venv .venv
 ```bash
 docker compose -f deploy/contractops/docker-compose.yml up --build
 ```
+
+Compose 会先运行 Alembic 迁移，迁移成功后才启动 API。完整隔离验证使用
+`deploy/contractops/docker-compose.test.yml`。
 
 默认端口：API `8080`、PostgreSQL `55432`、Redis `56379`、MinIO API `59000`、
 MinIO Console `59001`。默认密码只用于本地开发。

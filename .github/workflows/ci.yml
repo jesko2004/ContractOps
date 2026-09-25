@@ -58,8 +58,8 @@ jobs:
           CI_PARALLEL_ANNOTATE: '0'
         run: |
           set -euo pipefail
-          scripts/ci-run-parallel.sh ok 'true' ok2 'true'
-          if scripts/ci-run-parallel.sh ok 'true' bad 'exit 7'; then
+          bash scripts/ci-run-parallel.sh ok 'true' ok2 'true'
+          if bash scripts/ci-run-parallel.sh ok 'true' bad 'exit 7'; then
             echo 'ci-run-parallel.sh should have failed'
             exit 1
           fi
@@ -139,7 +139,7 @@ jobs:
       # slowest (ESLint) is the new bound.
       - name: Prettier, ESLint, TypeScript, i18n
         run: |
-          scripts/ci-run-parallel.sh \
+          bash scripts/ci-run-parallel.sh \
             'prettier' 'pnpm check' \
             'eslint' 'pnpm lint' \
             'tsc' 'npx tsc --noEmit' \

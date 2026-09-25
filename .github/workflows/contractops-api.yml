@@ -1,0 +1,67 @@
+name: ContractOps API
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "services/contract-api/**"
+      - "deploy/contractops/**"
+      - ".github/workflows/contractops-api.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "services/contract-api/**"
+      - "deploy/contractops/**"
+      - ".github/workflows/contractops-api.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: contractops-api-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  quality:
+    name: Lint, types, tests, and migrations
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: contractops_test
+          POSTGRES_USER: contractops_admin
+          POSTGRES_PASSWORD: contractops-admin-test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U contractops_admin -d contractops_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      CONTRACTOPS_ENVIRONMENT: test
+      CONTRACTOPS_MIGRATION_DATABASE_URL: postgresql://contractops_admin:contractops-admin-test@localhost:5432/contractops_test
+    defaults:
+      run:
+        working-directory: services/contract-api
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: services/contract-api/pyproject.toml
+
+      - name: Install ContractOps API
+        run: python -m pip install -e ".[dev]"
+
+      - name: Lint, typecheck, and unit tests
+        run: python scripts/check.py
+
+      - name: Empty database migration verification
+        run: python scripts/verify_migrations.py
+
+      - name: Validate test Compose
+        working-directory: deploy/contractops
+        run: docker compose -f docker-compose.test.yml config --quiet

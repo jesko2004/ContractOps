@@ -1,0 +1,84 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: contractops_test
+      POSTGRES_USER: contractops_admin
+      POSTGRES_PASSWORD: contractops-admin-test
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U contractops_admin -d contractops_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    tmpfs:
+      - /var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: contractops
+      MINIO_ROOT_PASSWORD: contractops-test-secret
+    tmpfs:
+      - /data
+
+  migrate:
+    build:
+      context: ../../services/contract-api
+      target: runtime
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      CONTRACTOPS_MIGRATION_DATABASE_URL: postgresql://contractops_admin:contractops-admin-test@postgres:5432/contractops_test
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  contract-api:
+    build:
+      context: ../../services/contract-api
+      target: runtime
+    environment:
+      CONTRACTOPS_ENVIRONMENT: test
+      CONTRACTOPS_DATABASE_URL: postgresql://contractops_admin:contractops-admin-test@postgres:5432/contractops_test
+      CONTRACTOPS_REDIS_URL: redis://redis:6379/0
+      CONTRACTOPS_OBJECT_STORE_ENDPOINT: http://minio:9000
+      CONTRACTOPS_OBJECT_STORE_ACCESS_KEY: contractops
+      CONTRACTOPS_OBJECT_STORE_SECRET_KEY: contractops-test-secret
+      CONTRACTOPS_OBJECT_STORE_BUCKET: contractops-test
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8080/health/live')"
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+  checks:
+    build:
+      context: ../../services/contract-api
+      target: test
+    command: ["python", "scripts/check.py", "--with-migrations"]
+    environment:
+      CONTRACTOPS_ENVIRONMENT: test
+      CONTRACTOPS_MIGRATION_DATABASE_URL: postgresql://contractops_admin:contractops-admin-test@postgres:5432/contractops_test
+    depends_on:
+      contract-api:
+        condition: service_healthy

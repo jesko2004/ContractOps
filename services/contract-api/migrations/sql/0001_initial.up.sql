@@ -15,7 +15,10 @@ CREATE TABLE contracts (
     contract_type text NOT NULL,
     counterparty_name text,
     status text NOT NULL DEFAULT 'DRAFT'
-        CHECK (status IN ('DRAFT', 'IN_REVIEW', 'APPROVED', 'ACTIVE', 'EXPIRED', 'CANCELLED')),
+        CHECK (status IN (
+            'DRAFT', 'SUBMITTED', 'IN_APPROVAL', 'APPROVED', 'CHANGES_REQUESTED',
+            'REJECTED', 'ACTIVE', 'SUSPENDED', 'TERMINATED', 'EXPIRED'
+        )),
     current_version_id uuid,
     state_version integer NOT NULL DEFAULT 0,
     created_by uuid NOT NULL,
