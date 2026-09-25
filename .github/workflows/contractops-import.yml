@@ -1,0 +1,40 @@
+name: ContractOps one-time import
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fetch import chunks
+        run: git fetch origin contractops-import:refs/remotes/origin/contractops-import
+      - name: Reassemble and verify archive
+        shell: bash
+        run: |
+          archive="$RUNNER_TEMP/contractops-source.zip"
+          : > "$archive"
+          for file in $(git ls-tree -r --name-only origin/contractops-import .contractops-import/chunks | sort); do
+            git show "origin/contractops-import:$file" >> "$archive"
+          done
+          unzip -t "$archive" >/dev/null
+      - name: Replace repository contents
+        shell: bash
+        run: |
+          cp .github/workflows/contractops-import.yml "$RUNNER_TEMP/contractops-import.yml"
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf -- {} +
+          unzip -q "$RUNNER_TEMP/contractops-source.zip" -d .
+          rm -rf .github/workflows
+          mkdir -p .github/workflows
+          cp "$RUNNER_TEMP/contractops-import.yml" .github/workflows/contractops-import.yml
+      - name: Commit and push imported source
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Import local ContractOps project"
+          git push origin HEAD:main
