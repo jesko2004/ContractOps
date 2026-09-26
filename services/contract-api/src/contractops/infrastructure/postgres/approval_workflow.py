@@ -15,7 +15,7 @@ from contractops.application.approvals import (
     StepActionCommand,
     TransferStepCommand,
 )
-from contractops.context import ActorContext, DataScope, Role
+from contractops.context import ActorContext, DataScope, Role, get_request_context
 from contractops.domain.approval import (
     ApprovalDecision,
     ApprovalInstance,
@@ -913,14 +913,19 @@ class PostgresApprovalWorkflow(ApprovalWorkflow):
         aggregate_id: UUID,
         payload: dict[str, str],
     ) -> None:
+        try:
+            request_id = get_request_context().request_id
+        except RuntimeError:
+            request_id = None
         connection.execute(
             text(
                 """
                 INSERT INTO outbox_events (
-                    tenant_id, event_type, aggregate_type, aggregate_id, payload
+                    tenant_id, event_type, aggregate_type, aggregate_id, payload,
+                    request_id
                 ) VALUES (
                     :tenant_id, :event_type, :aggregate_type, :aggregate_id,
-                    CAST(:payload AS jsonb)
+                    CAST(:payload AS jsonb), :request_id
                 )
                 """
             ),
@@ -930,5 +935,6 @@ class PostgresApprovalWorkflow(ApprovalWorkflow):
                 "aggregate_type": aggregate_type,
                 "aggregate_id": aggregate_id,
                 "payload": json.dumps(payload),
+                "request_id": request_id,
             },
         )

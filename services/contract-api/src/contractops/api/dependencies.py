@@ -8,6 +8,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from contractops.application.approvals import ApprovalService
 from contractops.application.contracts import ContractService
+from contractops.application.events import EventAdminService
 from contractops.auth import JWTDecoder
 from contractops.context import (
     ActorContext,
@@ -45,3 +46,14 @@ def get_contract_service(request: Request) -> ContractService:
 
 def get_approval_service(request: Request) -> ApprovalService:
     return cast(ApprovalService, request.app.state.approval_service)
+
+
+def get_event_admin_service(request: Request) -> EventAdminService:
+    service = getattr(request.app.state, "event_admin_service", None)
+    if not isinstance(service, EventAdminService):
+        raise ContractOpsError(
+            code="event_admin_unavailable",
+            message="event administration is not configured",
+            status_code=503,
+        )
+    return service

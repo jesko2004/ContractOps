@@ -38,12 +38,23 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     env:
       CONTRACTOPS_ENVIRONMENT: test
       CONTRACTOPS_MIGRATION_DATABASE_URL: postgresql://contractops_admin:contractops-admin-test@localhost:5432/contractops_test
       CONTRACTOPS_DATABASE_URL: postgresql://contractops_app:contractops-app-test@localhost:5432/contractops_test
       CONTRACTOPS_INTEGRATION_DATABASE_URL: postgresql://contractops_app:contractops-app-test@localhost:5432/contractops_test
       CONTRACTOPS_INTEGRATION_ADMIN_DATABASE_URL: postgresql://contractops_admin:contractops-admin-test@localhost:5432/contractops_test
+      CONTRACTOPS_INTEGRATION_WORKER_DATABASE_URL: postgresql://contractops_worker:contractops-worker-test@localhost:5432/contractops_test
+      CONTRACTOPS_INTEGRATION_REDIS_URL: redis://localhost:6379/15
     defaults:
       run:
         working-directory: services/contract-api

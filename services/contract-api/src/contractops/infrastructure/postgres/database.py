@@ -45,3 +45,25 @@ class Database:
 
     def dispose(self) -> None:
         self._engine.dispose()
+
+
+class WorkerDatabase:
+    """Database connection for the cross-tenant event worker.
+
+    The configured PostgreSQL role must be a dedicated NOLOGIN/LOGIN role with
+    BYPASSRLS and grants limited to the event delivery tables.
+    """
+
+    def __init__(self, url: str) -> None:
+        self._engine: Engine = create_engine(
+            normalize_database_url(url),
+            pool_pre_ping=True,
+        )
+
+    @contextmanager
+    def transaction(self) -> Iterator[Connection]:
+        with self._engine.begin() as connection:
+            yield connection
+
+    def dispose(self) -> None:
+        self._engine.dispose()

@@ -18,3 +18,8 @@ def test_alembic_baseline_files_are_present() -> None:
     ).is_file()
     assert (SERVICE_ROOT / "migrations" / "sql" / "0003_m2_approval_workflow.up.sql").is_file()
     assert (SERVICE_ROOT / "migrations" / "sql" / "0003_m2_approval_workflow.down.sql").is_file()
+    assert (
+        SERVICE_ROOT / "migrations" / "versions" / "20260926_0004_m3_reliable_events.py"
+    ).is_file()
+    assert (SERVICE_ROOT / "migrations" / "sql" / "0004_m3_reliable_events.up.sql").is_file()
+    assert (SERVICE_ROOT / "migrations" / "sql" / "0004_m3_reliable_events.down.sql").is_file()

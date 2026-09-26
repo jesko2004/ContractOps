@@ -36,14 +36,17 @@ ContractOps/
 - Contract、ContractVersion PostgreSQL Repository 与事务级 RLS 上下文；
 - 合同创建、查询和不可变版本登记 API，支持租户级幂等键和对象键隔离；
 - 多租户隔离、重复请求重放、版本不可覆盖的数据库集成测试；
+- Transactional Outbox 到 Redis Streams Consumer Group 的可靠发布链路；
+- Worker 租约、待处理消息接管、通知幂等、指数退避、死信与人工重放；
+- 不记录合同正文的日志通知，以及带稳定幂等键和可选 HMAC 签名的 Webhook 通知；
+- 独立 `contractops_worker` 跨租户数据库角色和受限事件表权限；
 - 产品边界、API 草案、里程碑、验收标准和持续更新记录。
 
 当前已实现：审批策略版本与发布、受控条件匹配、策略快照、顺序审批、高金额财务加签、
-个人待办、领取/审批/驳回/退回修改/转交、乐观并发控制和审批事件 Outbox。
+个人待办、领取/审批/驳回/退回修改/转交、乐观并发控制，以及审批事件的可靠异步通知。
 
-尚未实现：履约调度、风险升级、对象存储直传、通知消费与审批人目录校验。
-适配器。文档解析和模型调用安排在核心业务闭环完成之后。项目不会把规划能力表述为
-已完成。
+尚未实现：履约调度、风险升级、对象存储直传和审批人目录校验。文档解析和模型调用
+安排在核心业务闭环完成之后。项目不会把规划能力表述为已完成。
 
 ## 本地启动
 
@@ -86,7 +89,9 @@ docker compose -f deploy/contractops/docker-compose.yml up --build
 ```
 
 Compose 会先运行 Alembic 迁移，迁移成功后才启动 API。完整隔离验证使用
-`deploy/contractops/docker-compose.test.yml`。
+`deploy/contractops/docker-compose.test.yml`。开发 Compose 还会启动独立的
+`contract-worker`，它负责 Outbox 发布、Redis Streams 消费、日志/Webhook 通知和失败
+重试。
 
 默认端口：API `8080`、PostgreSQL `55432`、Redis `56379`、MinIO API `59000`、
 MinIO Console `59001`。默认密码只用于本地开发。
