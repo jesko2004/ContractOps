@@ -17,7 +17,7 @@ def run(*arguments: str) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run the ContractOps M0 quality gate")
+    parser = argparse.ArgumentParser(description="Run the ContractOps API quality gate")
     parser.add_argument(
         "--with-migrations",
         action="store_true",

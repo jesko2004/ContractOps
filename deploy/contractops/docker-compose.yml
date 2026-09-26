@@ -11,6 +11,9 @@ services:
       CONTRACTOPS_OBJECT_STORE_SECRET_KEY: contractops-dev-secret
       CONTRACTOPS_OBJECT_STORE_BUCKET: contractops
       CONTRACTOPS_MODEL_BASE_URL: http://host.docker.internal:4000/v1
+      CONTRACTOPS_JWT_SECRET: contractops-local-jwt-secret-replace-before-sharing
+      CONTRACTOPS_JWT_ISSUER: contractops
+      CONTRACTOPS_JWT_AUDIENCE: contractops-api
     depends_on:
       migrate:
         condition: service_completed_successfully

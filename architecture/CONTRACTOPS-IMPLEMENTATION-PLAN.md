@@ -244,7 +244,7 @@ PLANNED → ACTIVE → COMPLETED
 
 ## 8 多租户和权限
 
-- JWT 提供 `tenant_id`、`user_id`、角色和部门声明，不接受客户端自定义租户头；
+- JWT 提供 `tenant_id`、`sub`、角色和部门声明，不接受客户端自定义租户头；
 - API 在进入用例前构建请求上下文，Repository 不接受裸 `tenant_id` 参数；
 - 每个事务执行 `SET LOCAL app.tenant_id` 和 `SET LOCAL app.user_id`；
 - PostgreSQL RLS 作为应用权限之外的第二道防线；

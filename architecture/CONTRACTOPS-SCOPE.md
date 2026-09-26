@@ -81,18 +81,20 @@ ContractOps 不以通用 PDF 检查、版面分析或文档问答为产品目标
 - 初版审查状态机及单元测试；
 - PostgreSQL/pgvector 初始迁移；
 - PostgreSQL、Redis、MinIO、API 的独立本地 Compose；
+- JWT 租户上下文、RBAC、部门/本人/租户三级数据范围；
+- Contract、ContractVersion PostgreSQL Repository 和事务级 RLS 上下文；
+- 合同创建、查询、不可变版本登记及租户级幂等；
+- 多租户隔离、重复请求和版本不可覆盖集成测试；
 - 项目范围、实施计划和验收边界。
 
 ## 尚未实现
 
-- 身份认证、租户上下文、RBAC 和部门数据范围；
-- Contract、ContractVersion Repository 和事务用例；
 - ApprovalPolicy、ApprovalInstance、ApprovalStep 和待办 API；
 - Outbox Publisher、Redis Streams Worker 和死信管理；
 - Obligation、RiskEvent、数据库租约和提醒去重；
 - 文件上传、PDF/DOCX 解析和条款证据；
 - 模型辅助提取和风险提示；
-- OpenTelemetry、指标看板、集成测试与压测。
+- 对象存储直传、OpenTelemetry、指标看板、完整端到端测试与压测。
 
 ## 明确不做
 

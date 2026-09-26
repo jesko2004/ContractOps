@@ -54,6 +54,9 @@ services:
       CONTRACTOPS_OBJECT_STORE_ACCESS_KEY: contractops
       CONTRACTOPS_OBJECT_STORE_SECRET_KEY: contractops-test-secret
       CONTRACTOPS_OBJECT_STORE_BUCKET: contractops-test
+      CONTRACTOPS_JWT_SECRET: contractops-test-jwt-secret-not-for-production
+      CONTRACTOPS_JWT_ISSUER: contractops
+      CONTRACTOPS_JWT_AUDIENCE: contractops-api
     depends_on:
       migrate:
         condition: service_completed_successfully

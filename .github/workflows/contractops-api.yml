@@ -41,6 +41,9 @@ jobs:
     env:
       CONTRACTOPS_ENVIRONMENT: test
       CONTRACTOPS_MIGRATION_DATABASE_URL: postgresql://contractops_admin:contractops-admin-test@localhost:5432/contractops_test
+      CONTRACTOPS_DATABASE_URL: postgresql://contractops_app:contractops-app-test@localhost:5432/contractops_test
+      CONTRACTOPS_INTEGRATION_DATABASE_URL: postgresql://contractops_app:contractops-app-test@localhost:5432/contractops_test
+      CONTRACTOPS_INTEGRATION_ADMIN_DATABASE_URL: postgresql://contractops_admin:contractops-admin-test@localhost:5432/contractops_test
     defaults:
       run:
         working-directory: services/contract-api
@@ -56,11 +59,14 @@ jobs:
       - name: Install ContractOps API
         run: python -m pip install -e ".[dev]"
 
-      - name: Lint, typecheck, and unit tests
-        run: python scripts/check.py
-
       - name: Empty database migration verification
         run: python scripts/verify_migrations.py
+
+      - name: Provision non-superuser runtime role
+        run: python scripts/provision_ci_database.py
+
+      - name: Lint, typecheck, unit, and integration tests
+        run: python scripts/check.py
 
       - name: Validate test Compose
         working-directory: deploy/contractops

@@ -173,7 +173,7 @@ def configure_document(doc: Document) -> None:
     header = section.header
     header_paragraph = header.paragraphs[0]
     header_paragraph.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    run = header_paragraph.add_run("ContractOps 项目更新记录  版本 0.6")
+    run = header_paragraph.add_run("ContractOps 项目更新记录  版本 0.7")
     set_run_font(run, size=8.5, color=BLACK)
 
     footer = section.footer
@@ -289,7 +289,7 @@ def add_cover(doc: Document) -> None:
         ["项目字段", "当前内容"],
         [
             ["项目名称", "ContractOps 企业合同审批与履约风控后端服务"],
-            ["文档版本", "0.6"],
+            ["文档版本", "0.7"],
             ["最后更新", "2026 年 9 月 26 日"],
             ["维护方式", "每次源代码更新后追加一条更新记录 不覆盖历史决策"],
             ["主要读者", "项目开发者 代码评审者 面试准备人员"],
@@ -392,6 +392,13 @@ def add_foundation_sections(doc: Document) -> None:
                 "移除失去工作流的 ClawHub 发布测试子系统",
                 "删除两个发布脚本及其两组专用测试",
                 "引用清理通过 PR 完整单测待复跑",
+            ],
+            [
+                "UPD 007",
+                "2026 09 26",
+                "完成 M1 多租户与合同台账",
+                "实现 JWT 权限 合同与版本 Repository RLS 和幂等接口",
+                "本地 37 项通过 PostgreSQL 集成测试待 CI",
             ],
         ],
         widths=[0.7, 0.9, 2.0, 2.1, 1.35],
@@ -1033,8 +1040,108 @@ def add_update_006(doc: Document) -> None:
     )
 
 
+def add_update_007(doc: Document) -> None:
+    add_heading(doc, "十一 更新记录 UPD 007", 1)
+
+    add_heading(doc, "十一之一 更新目标", 2)
+    add_paragraph(
+        doc,
+        "执行实施计划 M1 多租户与合同台账 建立服务端可信的身份上下文和分层权限控制 "
+        "实现 Contract 与 ContractVersion 持久化以及创建 查询 新增版本三个接口 "
+        "并用数据库约束验证租户隔离 幂等重放和版本不可覆盖",
+    )
+
+    add_heading(doc, "十一之二 候选方案和选择过程", 2)
+    add_table(
+        doc,
+        ["决策项", "候选方法", "最终选择", "选择依据"],
+        [
+            ["令牌验证", "引入完整 OIDC SDK 或使用首方 HS256", "严格 HS256 解码器", "当前没有身份提供方 先固定算法 签名 签发方 受众和时间声明 避免伪造客户端租户头"],
+            ["权限隔离", "只在 SQL 条件中拼 tenant id", "依赖注入加应用 RBAC 加 FORCE RLS", "应用负责角色和部门语义 数据库负责阻止跨租户漏查"],
+            ["数据库访问", "异步 ORM 或同步 SQLAlchemy Core", "同步事务和显式 SQL", "当前业务量和团队规模不需要异步复杂度 显式 SQL 更便于检查锁和 RLS 上下文"],
+            ["重复请求", "查询后插入或仅依赖唯一键", "租户级事务锁加幂等记录", "并发重试下仍只产生一个资源 且不同载荷复用同一键会返回冲突"],
+            ["版本不可变", "只在应用层禁止更新", "数据库触发器保护核心字段", "脚本或未来代码绕过服务层时仍不能覆盖历史版本"],
+        ],
+        widths=[1.05, 1.65, 1.7, 2.6],
+        font_size=8.3,
+    )
+
+    add_heading(doc, "十一之三 实现内容", 2)
+    add_table(
+        doc,
+        ["区域", "实现内容", "关键边界"],
+        [
+            ["认证上下文", "校验 JWT 签名 exp nbf iss aud 以及租户 用户 角色 部门和数据范围", "上下文由服务端令牌生成 不接受客户端租户头"],
+            ["应用权限", "经办人和租户管理员可写 审批人 法务 审计角色可按范围读取", "本人 部门 租户范围与业务角色分开判断"],
+            ["合同台账", "实现合同创建和查询 Repository 以及金额 币种 有效期校验", "合同编号在租户内唯一"],
+            ["合同版本", "登记文件元数据 内容哈希 对象键和递增版本号", "核心字段由触发器禁止覆盖 首版自动设置当前版本"],
+            ["幂等控制", "创建合同和新增版本均要求 Idempotency Key", "同键同载荷重放原结果 同键不同载荷返回稳定冲突"],
+            ["数据库隔离", "每个事务设置 app tenant id user id 和 data scope", "运行角色不具备 BYPASSRLS CI 使用独立管理员迁移角色"],
+            ["接口与运行", "新增三个 v1 合同接口并让 readiness 探测数据库", "错误返回稳定代码和请求 ID 不暴露数据库细节"],
+        ],
+        widths=[1.2, 3.25, 2.55],
+        font_size=8.4,
+    )
+
+    add_heading(doc, "十一之四 问题难点和处理", 2)
+    add_heading(doc, "幂等检查存在并发窗口", 3)
+    add_paragraph(
+        doc,
+        "如果先查询幂等记录再写入 两个同时到达的相同请求都可能看不到记录并各自创建资源 "
+        "本次按照租户 操作和幂等键计算事务级 advisory lock 串行化同一请求族 "
+        "随后再读取幂等记录并比较请求哈希",
+    )
+    add_heading(doc, "应用权限不能替代数据库隔离", 3)
+    add_paragraph(
+        doc,
+        "部门范围和本人范围属于业务规则 不能全部塞进通用 RLS "
+        "但只靠应用查询条件又会留下跨租户泄漏风险 因此采用应用层完成细粒度授权 "
+        "PostgreSQL FORCE RLS 只承担不可越过的租户边界",
+    )
+    add_heading(doc, "测试必须使用非超级用户", 3)
+    add_paragraph(
+        doc,
+        "PostgreSQL 表所有者和超级用户可能绕过 RLS 如果集成测试继续使用迁移管理员会得到虚假的隔离结果 "
+        "CI 先完成迁移 再创建 NOBYPASSRLS 的 contractops app 角色并授权业务表 "
+        "Repository 测试只使用该运行角色",
+    )
+    add_heading(doc, "文件上传与版本登记边界", 3)
+    add_paragraph(
+        doc,
+        "M1 只登记经过校验的文件元数据和租户前缀对象键 不把对象上传伪装为已完成 "
+        "MinIO 预签名上传 完成确认和解析任务按照计划保留到 M6",
+    )
+
+    add_heading(doc, "十一之五 验证结果", 2)
+    add_table(
+        doc,
+        ["验证项", "结果", "证据或限制"],
+        [
+            ["Ruff 和格式规则", "通过", "ContractOps API 源码 测试 脚本和迁移检查通过"],
+            ["mypy strict", "通过", "22 个源码文件无类型错误"],
+            ["本地 pytest", "通过", "37 项通过"],
+            ["PostgreSQL 集成测试", "待 CI", "本机未配置运行和管理员数据库 URL 3 项按条件跳过"],
+            ["数据库迁移往返", "待 CI", "GitHub 空库执行升级 回滚 再升级"],
+            ["PR 全仓门禁", "待执行", "远程分支和 PR 尚待创建"],
+        ],
+        widths=[1.65, 1.0, 4.3],
+        font_size=8.8,
+    )
+
+    add_heading(doc, "十一之六 遗留风险和下一步", 2)
+    add_bullets(
+        doc,
+        [
+            "HS256 仅适合当前首方令牌场景 接入企业身份提供方时应迁移到 OIDC JWKS 并补密钥轮换",
+            "M1 只实现合同台账写入和版本元数据登记 尚未实现对象上传和内容解析",
+            "数据库集成测试和迁移往返必须在 PR CI 通过后才可把 M1 标记为最终完成",
+            "下一阶段 M2 实现审批策略版本 策略快照 顺序审批和个人待办",
+        ],
+    )
+
+
 def add_decisions_and_risks(doc: Document) -> None:
-    add_heading(doc, "十一 当前决策记录", 1)
+    add_heading(doc, "十二 当前决策记录", 1)
     add_table(
         doc,
         ["编号", "决策", "原因", "重新评估条件"],
@@ -1052,12 +1159,15 @@ def add_decisions_and_risks(doc: Document) -> None:
             ["ADR 011", "CI Shell 脚本由 Bash 显式调用", "避免 Windows 和 API 上传丢失可执行位", "只有上传链路稳定保留 100755 时才评估简化"],
             ["ADR 012", "阶段成果使用独立分支和 PR 审批", "让 main 只接收经过检查和人工批准的变更", "只有项目负责人明确调整交付流程时变更"],
             ["ADR 013", "移除 ClawHub 发布子系统", "ContractOps 不发布 OpenMAIC skill 且工作流已经删除", "只有产品重新承担上游 skill 发布职责时重建"],
+            ["ADR 014", "JWT 上下文加应用 RBAC 加 FORCE RLS", "把身份 业务权限和租户数据边界分层实现", "接入企业 OIDC 时替换令牌验证层 保留权限和 RLS 边界"],
+            ["ADR 015", "事务锁加持久化幂等记录", "消除并发请求的检查写入窗口并支持安全重放", "吞吐压测证明锁粒度成为瓶颈时优化哈希或分区"],
+            ["ADR 016", "合同版本核心字段数据库级不可变", "防止绕过应用层覆盖审计历史", "只允许追加新的可变处理状态字段"],
         ],
         widths=[0.8, 1.6, 2.6, 1.9],
         font_size=8.7,
     )
 
-    add_heading(doc, "十二 风险登记", 1)
+    add_heading(doc, "十三 风险登记", 1)
     add_table(
         doc,
         ["风险", "影响", "当前控制", "后续验证"],
@@ -1073,6 +1183,9 @@ def add_decisions_and_risks(doc: Document) -> None:
             ["跨平台文件模式丢失", "Linux CI 脚本在任务开始时退出 126", "工作流显式使用 Bash 调用脚本", "每次迁移上传方式后观察 CI 自检"],
             ["上游格式债阻断阶段交付", "业务代码通过但根仓库质量门禁失败", "按日志修复具体文件 不扩大忽略范围", "PR 中运行完整 Prettier 和现有 CI"],
             ["删除入口后遗留测试和脚本", "后续单测读取不存在文件或死代码持续维护", "删除功能时同步清理脚本 测试和引用", "PR 完整单测和全仓引用搜索"],
+            ["JWT 共享密钥泄漏或无法轮换", "攻击者可以伪造租户和角色声明", "严格校验签发方 受众 时间和算法 示例密钥仅用于本地", "接入 OIDC JWKS 密钥轮换和安全存储"],
+            ["RLS 测试使用高权限角色", "隔离缺陷被测试环境掩盖", "CI 单独建立 NOBYPASSRLS 运行角色", "持续验证跨租户读取和角色属性"],
+            ["幂等锁热点", "少量键被高频重试时增加事务等待", "锁粒度包含租户 操作和幂等键", "压测锁等待并设置请求超时"],
         ],
         widths=[1.45, 1.55, 2.45, 1.45],
         font_size=8.7,
@@ -1080,7 +1193,7 @@ def add_decisions_and_risks(doc: Document) -> None:
 
 
 def add_update_template(doc: Document) -> None:
-    add_heading(doc, "十三 后续更新记录模板", 1)
+    add_heading(doc, "十四 后续更新记录模板", 1)
     add_paragraph(
         doc,
         "复制本节并替换方括号内容 新记录必须追加在历史记录之后 不修改已经完成的决策说明",
@@ -1142,6 +1255,7 @@ def build_document(output_path: Path) -> None:
     add_update_004(document)
     add_update_005(document)
     add_update_006(document)
+    add_update_007(document)
     add_decisions_and_risks(document)
     add_update_template(document)
 
