@@ -36,6 +36,24 @@ services:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
 
+  contract-worker:
+    build:
+      context: ../../services/contract-api
+    command: ["contractops-worker"]
+    environment:
+      CONTRACTOPS_ENVIRONMENT: development
+      CONTRACTOPS_WORKER_DATABASE_URL: postgresql://contractops_worker:contractops-worker-dev@postgres:5432/contractops
+      CONTRACTOPS_REDIS_URL: redis://redis:6379/0
+      CONTRACTOPS_EVENT_CONSUMER_NAME: contractops-worker-local
+      CONTRACTOPS_NOTIFICATION_WEBHOOK_URL: ${CONTRACTOPS_NOTIFICATION_WEBHOOK_URL:-}
+      CONTRACTOPS_NOTIFICATION_WEBHOOK_SECRET: ${CONTRACTOPS_NOTIFICATION_WEBHOOK_SECRET:-}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
   migrate:
     build:
       context: ../../services/contract-api

@@ -74,6 +74,22 @@ services:
       timeout: 3s
       retries: 20
 
+  contract-worker:
+    build:
+      context: ../../services/contract-api
+      target: runtime
+    command: ["contractops-worker", "--once"]
+    environment:
+      CONTRACTOPS_ENVIRONMENT: test
+      CONTRACTOPS_WORKER_DATABASE_URL: postgresql://contractops_admin:contractops-admin-test@postgres:5432/contractops_test
+      CONTRACTOPS_REDIS_URL: redis://redis:6379/0
+      CONTRACTOPS_EVENT_CONSUMER_NAME: contractops-worker-test
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
   checks:
     build:
       context: ../../services/contract-api
