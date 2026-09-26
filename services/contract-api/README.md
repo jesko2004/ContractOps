@@ -2,7 +2,8 @@
 
 FastAPI service for the ContractOps contract approval and obligation-risk bounded context.
 
-The service currently includes the M0 engineering baseline and M1 multitenant contract ledger:
+The service currently includes the M0 engineering baseline, M1 multitenant contract ledger, and
+M2 approval workflow:
 
 - an injectable application factory, request context, and stable error envelope;
 - liveness, readiness, and system endpoints;
@@ -16,8 +17,8 @@ The service currently includes the M0 engineering baseline and M1 multitenant co
 - idempotent contract creation and immutable contract-version registration;
 - tenant-prefixed object keys and database integration tests for isolation and replay.
 
-Approval workflows, workers, object upload, and model calls are added in later milestones. They are
-not stubbed as successful behavior.
+Workers, object upload, and model calls are added in later milestones. They are not stubbed as
+successful behavior.
 
 ## Development
 
@@ -61,3 +62,21 @@ Available M1 endpoints:
 
 Both write endpoints require an `Idempotency-Key` header. Replaying the same key and payload returns
 the original resource; reusing the key with a different payload returns a stable conflict error.
+
+## Approval workflow
+
+Available M2 endpoints:
+
+- `POST /v1/approval-policies` creates a new draft version;
+- `POST /v1/approval-policies/{policy_id}:publish` publishes an immutable version;
+- `POST /v1/contracts/{contract_id}:submit` selects a policy and stores its snapshot;
+- `GET /v1/approval-tasks` returns the caller's actionable tasks;
+- `GET /v1/approval-instances/{instance_id}` returns workflow state and steps;
+- `POST /v1/approval-steps/{step_id}:claim` atomically claims a ready step;
+- `POST /v1/approval-steps/{step_id}:decide` approves, rejects, or requests changes;
+- `POST /v1/approval-steps/{step_id}:transfer` transfers a claimed step.
+
+Mutating workflow actions except the naturally idempotent publish transition require an
+`Idempotency-Key`. Step actions also require the caller's last observed `expected_version`, so only
+one concurrent decision can succeed. A contract returned for changes must receive a new immutable
+version before it becomes a draft that can be submitted again.

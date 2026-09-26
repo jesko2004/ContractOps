@@ -146,7 +146,12 @@ class PostgresContractLedger(ContractLedger):
 
             locked_contract = (
                 connection.execute(
-                    text("SELECT id, current_version_id FROM contracts WHERE id = :id FOR UPDATE"),
+                    text(
+                        """
+                        SELECT id, current_version_id, status
+                        FROM contracts WHERE id = :id FOR UPDATE
+                        """
+                    ),
                     {"id": contract_id},
                 )
                 .mappings()
@@ -157,6 +162,16 @@ class PostgresContractLedger(ContractLedger):
                     code="contract_not_found",
                     message="contract was not found",
                     status_code=404,
+                )
+            if locked_contract["status"] not in {
+                ContractStatus.DRAFT.value,
+                ContractStatus.CHANGES_REQUESTED.value,
+                ContractStatus.REJECTED.value,
+            }:
+                raise ContractOpsError(
+                    code="contract_version_not_allowed",
+                    message="versions can only be added while a contract is editable",
+                    status_code=409,
                 )
             duplicate = connection.execute(
                 text(
@@ -216,18 +231,17 @@ class PostgresContractLedger(ContractLedger):
                     "created_by": actor.user_id,
                 },
             )
-            if locked_contract["current_version_id"] is None:
-                connection.execute(
-                    text(
-                        """
-                        UPDATE contracts
-                        SET current_version_id = :version_id, updated_at = now(),
-                            state_version = state_version + 1
-                        WHERE id = :contract_id
-                        """
-                    ),
-                    {"version_id": version_id, "contract_id": contract_id},
-                )
+            connection.execute(
+                text(
+                    """
+                    UPDATE contracts
+                    SET current_version_id = :version_id, status = 'DRAFT', updated_at = now(),
+                        state_version = state_version + 1
+                    WHERE id = :contract_id
+                    """
+                ),
+                {"version_id": version_id, "contract_id": contract_id},
+            )
             self._record_idempotency(
                 connection,
                 actor,
