@@ -6,14 +6,9 @@
     "schema": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "crux",
-        "primary_rule",
-        "capability_boundary",
-        "p_solve"
-      ],
+      "required": ["crux", "primary_rule", "capability_boundary", "p_solve"],
       "properties": {
-        "crux": {"type": "string", "minLength": 1},
+        "crux": { "type": "string", "minLength": 1 },
         "primary_rule": {
           "type": "string",
           "enum": [
@@ -33,7 +28,7 @@
           "type": "string",
           "enum": ["supported", "uncertain", "unsupported", "unmatched"]
         },
-        "p_solve": {"type": "number", "minimum": 0.0, "maximum": 1.0}
+        "p_solve": { "type": "number", "minimum": 0.0, "maximum": 1.0 }
       }
     }
   }

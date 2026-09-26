@@ -24,10 +24,7 @@
   "t2v3-ADebd7-toolset-name-prefix": {
     "alt_files": [],
     "alt_functions": [],
-    "files": [
-      "src/google/adk/agents/llm_agent.py",
-      "src/google/adk/tools/base_toolset.py"
-    ],
+    "files": ["src/google/adk/agents/llm_agent.py", "src/google/adk/tools/base_toolset.py"],
     "functions": [
       "src.google.adk.agents.llm_agent._convert_tool_union_to_tools",
       "src.google.adk.tools.base_toolset.BaseToolset.__init__",
@@ -216,19 +213,12 @@
     "n_hunks": 110,
     "repo_commit": "0a412caf6ac065d6df33edc7e1bd99eda0bef832",
     "repo_url": "https://github.com/angr/angrop.git",
-    "skipped_files": [
-      "README.md",
-      "angrop/errors.py"
-    ]
+    "skipped_files": ["README.md", "angrop/errors.py"]
   },
   "t2v3-AUb452-regex-character-class-support": {
     "alt_files": [],
     "alt_functions": [],
-    "files": [
-      "automata/fa/nfa.py",
-      "automata/regex/parser.py",
-      "automata/regex/regex.py"
-    ],
+    "files": ["automata/fa/nfa.py", "automata/regex/parser.py", "automata/regex/regex.py"],
     "functions": [
       "automata.fa.nfa.NFA.from_regex",
       "automata.regex.parser.QuantifierToken.__init__",
@@ -241,9 +231,7 @@
     "n_hunks": 14,
     "repo_commit": "da589c20c4ed6b0e8c22188f583b60725660404c",
     "repo_url": "https://github.com/caleb531/automata.git",
-    "skipped_files": [
-      "automata/regex/regex.py"
-    ]
+    "skipped_files": ["automata/regex/regex.py"]
   },
   "t2v3-BL60e2-http-client-protocol-refactor": {
     "alt_files": [],
@@ -446,10 +434,7 @@
   "t2v3-BLbca5-mount-prefix-propagation": {
     "alt_files": [],
     "alt_functions": [],
-    "files": [
-      "blacksheep/server/application.py",
-      "blacksheep/server/files/dynamic.py"
-    ],
+    "files": ["blacksheep/server/application.py", "blacksheep/server/files/dynamic.py"],
     "functions": [
       "blacksheep.server.application.Application.mount",
       "blacksheep.server.application.MountMixin.__call__",
@@ -490,19 +475,12 @@
     "n_hunks": 27,
     "repo_commit": "309e9d1413cfb0947b8ba4e704dd5dcd2652ae27",
     "repo_url": "https://github.com/python-attrs/cattrs.git",
-    "skipped_files": [
-      "HISTORY.md",
-      "docs/customizing.md",
-      "docs/defaulthooks.md"
-    ]
+    "skipped_files": ["HISTORY.md", "docs/customizing.md", "docs/defaulthooks.md"]
   },
   "t2v3-CA872b-splits-during-bed-and-breakfast": {
     "alt_files": [],
     "alt_functions": [],
-    "files": [
-      "cgt_calc/exceptions.py",
-      "cgt_calc/main.py"
-    ],
+    "files": ["cgt_calc/exceptions.py", "cgt_calc/main.py"],
     "functions": [
       "cgt_calc.exceptions.PriceMissingError.__init__",
       "cgt_calc.main.CapitalGainsCalculator.__init__",
@@ -663,9 +641,7 @@
   "t2v3-CR1c25-django-settings-forward-ref": {
     "alt_files": [],
     "alt_functions": [],
-    "files": [
-      "src/creosote/parsers.py"
-    ],
+    "files": ["src/creosote/parsers.py"],
     "functions": [
       "src.creosote.parsers.DjangoSettingsVisitor.__init__",
       "src.creosote.parsers.DjangoSettingsVisitor._resolve_value",
@@ -851,9 +827,7 @@
     "n_hunks": 48,
     "repo_commit": "e38d00617cba5ad17018ae9a9c03672f7c6f12d3",
     "repo_url": "https://github.com/spcl/dace.git",
-    "skipped_files": [
-      ".github/workflows/general-ci.yml"
-    ]
+    "skipped_files": [".github/workflows/general-ci.yml"]
   },
   "t2v3-DA0f7a-input-model-unserializable-types": {
     "alt_files": [],
@@ -960,9 +934,7 @@
     "n_hunks": 14,
     "repo_commit": "173da97bdd04847afb01aa279bdaab9c643c58c3",
     "repo_url": "https://github.com/spcl/dace.git",
-    "skipped_files": [
-      ".github/workflows/gpu-ci.yml"
-    ]
+    "skipped_files": [".github/workflows/gpu-ci.yml"]
   },
   "t2v3-DB1222-tz-aware-cron-backfill": {
     "alt_files": [],
@@ -1002,9 +974,7 @@
     "n_hunks": 40,
     "repo_commit": "e2d420b601cfdfa24d5a6ed5c2201d0f19c2640c",
     "repo_url": "https://github.com/dbos-inc/dbos-transact-py.git",
-    "skipped_files": [
-      "dbos/_schemas/system_database.py"
-    ]
+    "skipped_files": ["dbos/_schemas/system_database.py"]
   },
   "t2v3-DE0e88-hpo-solution-selection-framework": {
     "alt_files": [],
@@ -1221,9 +1191,7 @@
     "n_hunks": 17,
     "repo_commit": "020d535f9cd203749b540031180f1c5bffe0f3f4",
     "repo_url": "https://github.com/qdrant/fastembed.git",
-    "skipped_files": [
-      "fastembed/common/onnx_model.py"
-    ]
+    "skipped_files": ["fastembed/common/onnx_model.py"]
   },
   "t2v3-FAe252-publisher-mock-empty-dest": {
     "alt_files": [],
@@ -1289,9 +1257,7 @@
   "t2v3-FL8811-nested-pydantic-type-resolution": {
     "alt_files": [],
     "alt_functions": [],
-    "files": [
-      "flytekit/core/type_engine.py"
-    ],
+    "files": ["flytekit/core/type_engine.py"],
     "functions": [
       "flytekit.core.type_engine._get_element_type",
       "flytekit.core.type_engine._handle_json_schema_property"
@@ -1380,9 +1346,7 @@
     "n_hunks": 9,
     "repo_commit": "bf1034a7eba75d15a1e1ea48d152dcc90a22387d",
     "repo_url": "https://github.com/microsoft/graphrag.git",
-    "skipped_files": [
-      "docs/examples_notebooks/index_migration_to_v1.ipynb"
-    ]
+    "skipped_files": ["docs/examples_notebooks/index_migration_to_v1.ipynb"]
   },
   "t2v3-HAc618-hatch-pep735-dependency-groups": {
     "alt_files": [],
@@ -1405,10 +1369,7 @@
     "n_hunks": 9,
     "repo_commit": "09b200757f5a8437bb133e955c93623f1e74332c",
     "repo_url": "https://github.com/pypa/hatch.git",
-    "skipped_files": [
-      "docs/config/environment/advanced.md",
-      "docs/config/environment/overview.md"
-    ]
+    "skipped_files": ["docs/config/environment/advanced.md", "docs/config/environment/overview.md"]
   },
   "t2v3-HU0299-webhooks-cli-subcommand": {
     "alt_files": [],
@@ -1474,10 +1435,7 @@
     "n_hunks": 19,
     "repo_commit": "6ab7274806a2b0fb346e5d934a03c5df208b5fce",
     "repo_url": "https://github.com/huggingface/huggingface_hub.git",
-    "skipped_files": [
-      "docs/source/en/package_reference/cli.md",
-      "src/huggingface_hub/errors.py"
-    ]
+    "skipped_files": ["docs/source/en/package_reference/cli.md", "src/huggingface_hub/errors.py"]
   },
   "t2v3-HU98e9-cli-repo-type-prefix-rewrite": {
     "alt_files": [],
@@ -1538,17 +1496,12 @@
     "n_hunks": 20,
     "repo_commit": "0458a99859c1daf8c8e336919ae6e9df283aab53",
     "repo_url": "https://github.com/jsonpickle/jsonpickle.git",
-    "skipped_files": [
-      "CHANGES.rst",
-      "pyproject.toml"
-    ]
+    "skipped_files": ["CHANGES.rst", "pyproject.toml"]
   },
   "t2v3-LAac00-circuit-ansatz-ancilla-support": {
     "alt_files": [],
     "alt_functions": [],
-    "files": [
-      "lambeq/ansatz/circuit.py"
-    ],
+    "files": ["lambeq/ansatz/circuit.py"],
     "functions": [
       "lambeq.ansatz.circuit.CircuitAnsatz.__init__",
       "lambeq.ansatz.circuit.CircuitAnsatz._ar",
@@ -1815,11 +1768,7 @@
     "n_hunks": 7,
     "repo_commit": "b30158814a38e2d5346b39da5c688a52a138de8d",
     "repo_url": "https://github.com/octodns/octodns.git",
-    "skipped_files": [
-      "docs/index.rst",
-      "script/coverage",
-      "tests/config/include/dict.yaml"
-    ]
+    "skipped_files": ["docs/index.rst", "script/coverage", "tests/config/include/dict.yaml"]
   },
   "t2v3-OCc79e-templated-records-fqdn-validation": {
     "alt_files": [],
@@ -1964,9 +1913,7 @@
     "n_hunks": 10,
     "repo_commit": "d3d3af7abddd1d11d8b698e29b4b579a3a903a67",
     "repo_url": "https://github.com/vroonhof/opensteuerauszug.git",
-    "skipped_files": [
-      "tests/samples/import/ibkr/vtandchill_2025.xml"
-    ]
+    "skipped_files": ["tests/samples/import/ibkr/vtandchill_2025.xml"]
   },
   "t2v3-OP7ed8-org-disable-type-enum": {
     "alt_files": [],
@@ -2163,18 +2110,12 @@
     "n_hunks": 13,
     "repo_commit": "8d51ca4a9bcf11644880721674043a76e15af961",
     "repo_url": "https://github.com/pixeltable/pixeltable.git",
-    "skipped_files": [
-      "pixeltable/catalog/table_metadata.py"
-    ]
+    "skipped_files": ["pixeltable/catalog/table_metadata.py"]
   },
   "t2v3-PI68e1-asyncmap-result-sync-block": {
     "alt_files": [],
     "alt_functions": [],
-    "files": [
-      "docs/source/faq.md",
-      "pipefunc/_utils.py",
-      "pipefunc/map/_run.py"
-    ],
+    "files": ["docs/source/faq.md", "pipefunc/_utils.py", "pipefunc/map/_run.py"],
     "functions": [
       "pipefunc._utils.equal_dicts",
       "pipefunc._utils.is_equal",
@@ -2187,17 +2128,12 @@
     "n_hunks": 6,
     "repo_commit": "355584ef1ea7bdfee367a228efd847d72586abf6",
     "repo_url": "https://github.com/pipefunc/pipefunc.git",
-    "skipped_files": [
-      "docs/source/faq.md"
-    ]
+    "skipped_files": ["docs/source/faq.md"]
   },
   "t2v3-PIecf2-piccolo-table-str-abbreviated": {
     "alt_files": [],
     "alt_functions": [],
-    "files": [
-      "piccolo/apps/migrations/auto/serialisation.py",
-      "piccolo/table.py"
-    ],
+    "files": ["piccolo/apps/migrations/auto/serialisation.py", "piccolo/table.py"],
     "functions": [
       "piccolo.apps.migrations.auto.serialisation.SerialisedEnumInstance.__repr__",
       "piccolo.apps.migrations.auto.serialisation.SerialisedEnumType.__hash__",
@@ -2998,9 +2934,7 @@
     "n_hunks": 26,
     "repo_commit": "5f75492576bd1001fb8c11a4952c55f555596df2",
     "repo_url": "https://github.com/pyathena-dev/PyAthena.git",
-    "skipped_files": [
-      "docs/polars.rst"
-    ]
+    "skipped_files": ["docs/polars.rst"]
   },
   "t2v3-PY166e-scrolling-container-always-instantiate-b": {
     "alt_files": [],
@@ -3145,10 +3079,7 @@
     "n_hunks": 20,
     "repo_commit": "02596b795e3b2896b996f7a2ff33d14addb253d1",
     "repo_url": "https://github.com/graphistry/pygraphistry.git",
-    "skipped_files": [
-      "CHANGELOG.md",
-      "graphistry/compute/gfql/call/validation.py"
-    ]
+    "skipped_files": ["CHANGELOG.md", "graphistry/compute/gfql/call/validation.py"]
   },
   "t2v3-PY5a80-directional-border-widths": {
     "alt_files": [],
@@ -3359,10 +3290,7 @@
     "n_hunks": 204,
     "repo_commit": "bae75f55f850d3bf5a20800edeef46ba610e46cf",
     "repo_url": "https://github.com/MyreMylar/pygame_gui.git",
-    "skipped_files": [
-      "docs/source/theme_guide.rst",
-      "pygame_gui/data/default_theme.json"
-    ]
+    "skipped_files": ["docs/source/theme_guide.rst", "pygame_gui/data/default_theme.json"]
   },
   "t2v3-PY70e4-cypher-shortestpath-execution": {
     "alt_files": [],
@@ -3406,10 +3334,7 @@
     "n_hunks": 46,
     "repo_commit": "625f72177c221b28b46cd929d3e4da2621bd9d10",
     "repo_url": "https://github.com/graphistry/pygraphistry.git",
-    "skipped_files": [
-      ".github/workflows/ci.yml",
-      "CHANGELOG.md"
-    ]
+    "skipped_files": [".github/workflows/ci.yml", "CHANGELOG.md"]
   },
   "t2v3-PY99e9-cypher-multi-optional-with-chain": {
     "alt_files": [],
@@ -3443,10 +3368,7 @@
     "n_hunks": 15,
     "repo_commit": "c93e8b3c1799c51b4e9938d648ef7dd3122cfe47",
     "repo_url": "https://github.com/graphistry/pygraphistry.git",
-    "skipped_files": [
-      "CHANGELOG.md",
-      "graphistry/compute/gfql/call/validation.py"
-    ]
+    "skipped_files": ["CHANGELOG.md", "graphistry/compute/gfql/call/validation.py"]
   },
   "t2v3-PYa0ea-fold-unaryop-constants": {
     "alt_files": [],
@@ -3469,12 +3391,7 @@
     "n_hunks": 8,
     "repo_commit": "2d066ae6b7019d2331aa2df1e7a6bf7d57532d86",
     "repo_url": "https://github.com/dflook/python-minifier.git",
-    "skipped_files": [
-      ".github/workflows/test.yaml",
-      ".gitignore",
-      "tox-windows.ini",
-      "tox.ini"
-    ]
+    "skipped_files": [".github/workflows/test.yaml", ".gitignore", "tox-windows.ini", "tox.ini"]
   },
   "t2v3-PYce55-hypergraph-from-edges-return-as": {
     "alt_files": [],
@@ -3581,10 +3498,7 @@
     "n_hunks": 6,
     "repo_commit": "25cc906dba96a89492d6660abc92b25498e48d18",
     "repo_url": "https://github.com/requests-cache/requests-cache.git",
-    "skipped_files": [
-      "HISTORY.md",
-      "docs/user_guide/matching.md"
-    ]
+    "skipped_files": ["HISTORY.md", "docs/user_guide/matching.md"]
   },
   "t2v3-SA5235-ecdsa-remote-function-signing": {
     "alt_files": [],
@@ -4159,9 +4073,7 @@
   "t2v3-SQ6653-annotated-field-metadata": {
     "alt_files": [],
     "alt_functions": [],
-    "files": [
-      "sqlmodel/main.py"
-    ],
+    "files": ["sqlmodel/main.py"],
     "functions": [
       "sqlmodel.main.Field",
       "sqlmodel.main.RelationshipInfo.__init__",
@@ -4213,10 +4125,7 @@
   "t2v3-SSf831-sse-cooperative-shutdown": {
     "alt_files": [],
     "alt_functions": [],
-    "files": [
-      "README.md",
-      "sse_starlette/sse.py"
-    ],
+    "files": ["README.md", "sse_starlette/sse.py"],
     "functions": [
       "sse_starlette.sse.EventSourceResponse.__call__",
       "sse_starlette.sse.EventSourceResponse.__init__",
@@ -4226,9 +4135,7 @@
     "n_hunks": 8,
     "repo_commit": "d01e84ba659d5a5de0346d1ed861d50731c503e5",
     "repo_url": "https://github.com/sysid/sse-starlette.git",
-    "skipped_files": [
-      "README.md"
-    ]
+    "skipped_files": ["README.md"]
   },
   "t2v3-SU3637-screen-diffrot-compatibility": {
     "alt_files": [],
@@ -4267,9 +4174,7 @@
       "sunpy/map/mapbase.py",
       "sunpy/time/time.py"
     ],
-    "functions": [
-      "sunpy.map.mapbase.GenericMap.reproject_to"
-    ],
+    "functions": ["sunpy.map.mapbase.GenericMap.reproject_to"],
     "n_hunks": 8,
     "repo_commit": "acabd8b0b32b5dd395aac0f58215b09450cebf1b",
     "repo_url": "https://github.com/sunpy/sunpy.git",
@@ -4359,10 +4264,7 @@
     "n_hunks": 13,
     "repo_commit": "cab8ee22004d4ae17d75ffb842f677e364da2d41",
     "repo_url": "https://github.com/google/timesketch.git",
-    "skipped_files": [
-      "data/timesketch.conf",
-      "timesketch/lib/testlib.py"
-    ]
+    "skipped_files": ["data/timesketch.conf", "timesketch/lib/testlib.py"]
   },
   "t2v3-TI96f8-llm-feature-availability-settings": {
     "alt_files": [],
@@ -4415,11 +4317,7 @@
     "n_hunks": 11,
     "repo_commit": "4573c04d68bd92ba9c03c7208272d5e4ef7dd4a2",
     "repo_url": "https://github.com/tox-dev/tox.git",
-    "skipped_files": [
-      "docs/development.rst",
-      "docs/explanation.rst",
-      "pyproject.toml"
-    ]
+    "skipped_files": ["docs/development.rst", "docs/explanation.rst", "pyproject.toml"]
   },
   "t2v3-TO17d3-tox-sdist-wheel-package-type": {
     "alt_files": [],
@@ -4481,9 +4379,7 @@
     "n_hunks": 10,
     "repo_commit": "f9deb2cf019586d2d17cf11bd8863e441c2cef8c",
     "repo_url": "https://github.com/tox-dev/tox.git",
-    "skipped_files": [
-      "docs/user_guide.rst"
-    ]
+    "skipped_files": ["docs/user_guide.rst"]
   },
   "t2v3-TOe840-tox-toml-install-command": {
     "alt_files": [],
@@ -4555,9 +4451,7 @@
     "n_hunks": 38,
     "repo_commit": "0f80da8be4e61fa12b56ac262295a424725f1e2d",
     "repo_url": "https://github.com/google/tunix.git",
-    "skipped_files": [
-      "tunix/rl/rollout/base_rollout.py"
-    ]
+    "skipped_files": ["tunix/rl/rollout/base_rollout.py"]
   },
   "t2v3-TU5b12-unify-grpo-pipeline-dataloading": {
     "alt_files": [],
@@ -4586,16 +4480,12 @@
     "n_hunks": 17,
     "repo_commit": "162da1e65a708bfae7ab9b446d5d959e8cfd204e",
     "repo_url": "https://github.com/google/tunix.git",
-    "skipped_files": [
-      "docs/rollout.md"
-    ]
+    "skipped_files": ["docs/rollout.md"]
   },
   "t2v3-TWad40-article-inline-images": {
     "alt_files": [],
     "alt_functions": [],
-    "files": [
-      "twitter_cli/parser.py"
-    ],
+    "files": ["twitter_cli/parser.py"],
     "functions": [
       "twitter_cli.parser._extract_atomic_markdown",
       "twitter_cli.parser._normalize_article_entity_map",
@@ -4609,10 +4499,7 @@
   "t2v3-ULf607-ultraplot-sankey-diagrams": {
     "alt_files": [],
     "alt_functions": [],
-    "files": [
-      "ultraplot/axes/plot.py",
-      "ultraplot/internals/rcsetup.py"
-    ],
+    "files": ["ultraplot/axes/plot.py", "ultraplot/internals/rcsetup.py"],
     "functions": [
       "ultraplot.axes.plot.PlotAxes._call_native",
       "ultraplot.axes.plot.PlotAxes.curved_quiver",
@@ -4629,10 +4516,7 @@
   "t2v3-UV029b-websockets-sansio-keepalive-pings": {
     "alt_files": [],
     "alt_functions": [],
-    "files": [
-      "docs/settings.md",
-      "uvicorn/protocols/websockets/websockets_sansio_impl.py"
-    ],
+    "files": ["docs/settings.md", "uvicorn/protocols/websockets/websockets_sansio_impl.py"],
     "functions": [
       "uvicorn.protocols.websockets.websockets_sansio_impl.WebSocketsSansIOProtocol.__init__",
       "uvicorn.protocols.websockets.websockets_sansio_impl.WebSocketsSansIOProtocol.connection_lost",
@@ -4647,17 +4531,12 @@
     "n_hunks": 8,
     "repo_commit": "8d397c73191b49c6d5280098d7c09dbe474e00bf",
     "repo_url": "https://github.com/Kludex/uvicorn.git",
-    "skipped_files": [
-      "docs/settings.md"
-    ]
+    "skipped_files": ["docs/settings.md"]
   },
   "t2v3-VC1b70-httpcore-sync-async-split": {
     "alt_files": [],
     "alt_functions": [],
-    "files": [
-      "vcr/patch.py",
-      "vcr/stubs/httpcore_stubs.py"
-    ],
+    "files": ["vcr/patch.py", "vcr/stubs/httpcore_stubs.py"],
     "functions": [
       "vcr.patch.CassettePatcherBuilder._httpcore",
       "vcr.patch.CassettePatcherBuilder._urllib3_patchers",
@@ -4689,15 +4568,10 @@
       "src/xyzrender/presets/pmol.json",
       "src/xyzrender/renderer.py"
     ],
-    "functions": [
-      "src.xyzrender.renderer.render_svg"
-    ],
+    "functions": ["src.xyzrender.renderer.render_svg"],
     "n_hunks": 11,
     "repo_commit": "6daf5f5ff419bfdf8baf95593d1236938a151624",
     "repo_url": "https://github.com/aligfellow/xyzrender.git",
-    "skipped_files": [
-      "examples/images/caffeine_pmol.svg",
-      "src/xyzrender/presets/pmol.json"
-    ]
+    "skipped_files": ["examples/images/caffeine_pmol.svg", "src/xyzrender/presets/pmol.json"]
   }
 }
