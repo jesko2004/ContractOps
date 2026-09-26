@@ -4,10 +4,7 @@
       "support_verbosity": true,
       "default_verbosity": "low",
       "apply_patch_tool_type": "freeform",
-      "input_modalities": [
-        "text",
-        "image"
-      ],
+      "input_modalities": ["text", "image"],
       "supports_image_detail_original": true,
       "truncation_policy": {
         "mode": "tokens",
@@ -77,10 +74,7 @@
       "support_verbosity": true,
       "default_verbosity": "low",
       "apply_patch_tool_type": "freeform",
-      "input_modalities": [
-        "text",
-        "image"
-      ],
+      "input_modalities": ["text", "image"],
       "supports_image_detail_original": true,
       "truncation_policy": {
         "mode": "tokens",
@@ -150,10 +144,7 @@
       "support_verbosity": true,
       "default_verbosity": "low",
       "apply_patch_tool_type": "freeform",
-      "input_modalities": [
-        "text",
-        "image"
-      ],
+      "input_modalities": ["text", "image"],
       "supports_image_detail_original": true,
       "truncation_policy": {
         "mode": "tokens",
@@ -223,10 +214,7 @@
       "support_verbosity": true,
       "default_verbosity": "low",
       "apply_patch_tool_type": "freeform",
-      "input_modalities": [
-        "text",
-        "image"
-      ],
+      "input_modalities": ["text", "image"],
       "supports_image_detail_original": true,
       "truncation_policy": {
         "mode": "tokens",
@@ -296,10 +284,7 @@
       "support_verbosity": true,
       "default_verbosity": "low",
       "apply_patch_tool_type": "freeform",
-      "input_modalities": [
-        "text",
-        "image"
-      ],
+      "input_modalities": ["text", "image"],
       "supports_image_detail_original": true,
       "truncation_policy": {
         "mode": "tokens",

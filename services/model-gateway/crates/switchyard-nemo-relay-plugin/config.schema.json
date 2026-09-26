@@ -4,10 +4,7 @@
   "description": "Runs a Switchyard deployment through its shared in-process runner.",
   "type": "object",
   "additionalProperties": false,
-  "oneOf": [
-    { "required": ["switchyard_config_path"] },
-    { "required": ["switchyard_config"] }
-  ],
+  "oneOf": [{ "required": ["switchyard_config_path"] }, { "required": ["switchyard_config"] }],
   "properties": {
     "priority": {
       "type": "integer",

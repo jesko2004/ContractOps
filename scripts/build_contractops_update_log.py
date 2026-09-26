@@ -173,7 +173,7 @@ def configure_document(doc: Document) -> None:
     header = section.header
     header_paragraph = header.paragraphs[0]
     header_paragraph.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    run = header_paragraph.add_run("ContractOps 项目更新记录  版本 0.4")
+    run = header_paragraph.add_run("ContractOps 项目更新记录  版本 0.6")
     set_run_font(run, size=8.5, color=BLACK)
 
     footer = section.footer
@@ -289,8 +289,8 @@ def add_cover(doc: Document) -> None:
         ["项目字段", "当前内容"],
         [
             ["项目名称", "ContractOps 企业合同审批与履约风控后端服务"],
-            ["文档版本", "0.4"],
-            ["最后更新", "2026 年 9 月 25 日"],
+            ["文档版本", "0.6"],
+            ["最后更新", "2026 年 9 月 26 日"],
             ["维护方式", "每次源代码更新后追加一条更新记录 不覆盖历史决策"],
             ["主要读者", "项目开发者 代码评审者 面试准备人员"],
         ],
@@ -377,7 +377,21 @@ def add_foundation_sections(doc: Document) -> None:
                 "2026 09 25",
                 "修复上游 CI 脚本执行权限失败",
                 "改为由 Bash 显式调用并消除对 Git 可执行位的依赖",
-                "本地复现成功路径和预期失败路径 GitHub 复跑待推送",
+                "GitHub 自检已通过 完整检查暴露既有 Prettier 问题",
+            ],
+            [
+                "UPD 005",
+                "2026 09 26",
+                "清理模型网关格式债并建立阶段 PR 审批流程",
+                "格式化日志命中的八个文件并改用独立分支交付",
+                "完整 Prettier 检查和 PR 静态检查通过",
+            ],
+            [
+                "UPD 006",
+                "2026 09 26",
+                "移除失去工作流的 ClawHub 发布测试子系统",
+                "删除两个发布脚本及其两组专用测试",
+                "引用清理通过 PR 完整单测待复跑",
             ],
         ],
         widths=[0.7, 0.9, 2.0, 2.1, 1.35],
@@ -864,7 +878,8 @@ def add_update_004(doc: Document) -> None:
             ["成功路径自检", "通过", "Git Bash 执行两个成功命令并返回零"],
             ["预期失败路径", "通过", "内部命令退出 7 时并行运行器汇总后返回 1"],
             ["工作流差异检查", "通过", "三处调用均改为 bash scripts ci run parallel sh"],
-            ["GitHub Actions 复跑", "未执行", "修改尚未提交和推送"],
+            ["GitHub Actions 自检", "通过", "运行 36138239412 的 Parallel runner self test 已通过"],
+            ["完整质量检查", "发现后续问题", "脚本权限问题消失 后续 Prettier 检查发现八个既有格式文件"],
         ],
         widths=[1.65, 1.0, 4.3],
         font_size=8.8,
@@ -874,15 +889,152 @@ def add_update_004(doc: Document) -> None:
     add_numbered(
         doc,
         [
-            "提交并推送 CI 修复以及当前 ContractOps M0 修改",
-            "观察新的 CI 运行是否继续通过依赖安装和完整质量检查",
-            "若出现后续错误 按实际失败步骤新增记录而不是覆盖本次根因",
+            "将后续格式修复放入独立阶段分支并创建 PR",
+            "观察 PR CI 是否通过完整质量检查",
+            "由项目负责人审批后再合并到远端 main",
+        ],
+    )
+
+
+def add_update_005(doc: Document) -> None:
+    add_heading(doc, "九 更新记录 UPD 005", 1)
+
+    add_heading(doc, "九一 更新目标", 2)
+    add_paragraph(
+        doc,
+        "处理脚本权限修复后继续暴露的 Prettier 失败 同时把阶段交付调整为独立分支和 PR 审批流程 "
+        "避免后续阶段直接更新远端 main",
+    )
+
+    add_heading(doc, "九二 问题定位", 2)
+    add_paragraph(
+        doc,
+        "GitHub Actions 运行 36138239412 已确认 Parallel runner self test 通过 "
+        "随后 Prettier 3 8 1 报告 services model gateway 下八个既有 JSON CSS 和无扩展名 README 不符合根仓库格式规则 "
+        "其余 E2E Render Service Issue Triage 和 Main image 均通过",
+    )
+
+    add_heading(doc, "九三 方案选择", 2)
+    add_table(
+        doc,
+        ["候选方案", "优点", "限制", "决定"],
+        [
+            ["只格式化日志命中的八个文件", "改动可审查 不改变检查标准", "会产生较大的纯格式差异", "采用"],
+            ["把模型网关目录加入 Prettier ignore", "改动最少", "隐藏持续存在的格式债并降低门禁覆盖", "不采用"],
+            ["关闭或放宽 Prettier 门禁", "CI 可以快速变绿", "破坏仓库统一质量标准", "不采用"],
+        ],
+        widths=[1.75, 2.0, 2.25, 1.0],
+        font_size=8.7,
+    )
+
+    add_heading(doc, "九四 实现内容", 2)
+    add_bullets(
+        doc,
+        [
+            "新建 fix ci prettier gate 阶段分支",
+            "使用仓库锁定的 Prettier 3 8 1 仅格式化 CI 日志列出的八个文件",
+            "保留现有 Prettier ignore 和检查命令 不降低质量门禁",
+            "阶段完成后创建 PR 等待项目负责人审批 再合并到远端 main",
+        ],
+    )
+
+    add_heading(doc, "九五 验证结果", 2)
+    add_table(
+        doc,
+        ["验证项", "结果", "证据或限制"],
+        [
+            ["原权限故障", "通过", "GitHub Runner 上 Parallel runner self test 已通过"],
+            ["完整 Prettier 检查", "通过", "Prettier 3 8 1 检查整个仓库并返回全部匹配"],
+            ["ContractOps 后端门禁", "通过", "Ruff mypy strict 和 24 项 pytest 通过"],
+            ["PR CI", "待执行", "分支提交和 PR 尚待创建"],
+            ["合并 main", "待审批", "只有项目负责人批准后执行"],
+        ],
+        widths=[1.65, 1.0, 4.3],
+        font_size=8.8,
+    )
+
+    add_heading(doc, "九六 后续动作", 2)
+    add_numbered(
+        doc,
+        [
+            "提交阶段分支并通过 GitHub API 推送远端分支",
+            "创建 PR 并观察全部 Actions 结果",
+            "向项目负责人提交 PR 链接和验证证据 等待明确审批",
+        ],
+    )
+
+
+def add_update_006(doc: Document) -> None:
+    add_heading(doc, "十 更新记录 UPD 006", 1)
+
+    add_heading(doc, "十之一 更新目标", 2)
+    add_paragraph(
+        doc,
+        "修复 PR 质量作业在根仓库 Unit Tests 阶段出现的 ENOENT 错误 "
+        "让已删除的 OpenMAIC ClawHub 发布工作流不再留下孤立脚本和失效测试",
+    )
+
+    add_heading(doc, "十之二 问题定位", 2)
+    add_paragraph(
+        doc,
+        "PR 运行 36228333475 已通过 Prettier ESLint TypeScript 和 i18n "
+        "随后 tests ci check clawhub version test ts 的五个用例尝试读取已经删除的 publish openmaic skill yml 并返回 ENOENT "
+        "仓库仍保留两个 ClawHub 发布脚本和两组专用测试 但 ContractOps 不再有对应发布入口",
+    )
+
+    add_heading(doc, "十之三 方案选择", 2)
+    add_table(
+        doc,
+        ["候选方案", "优点", "限制", "决定"],
+        [
+            ["恢复 OpenMAIC 发布工作流", "原测试可以继续运行", "重新引入与 ContractOps 无关的外部发布行为", "不采用"],
+            ["工作流不存在时跳过测试", "改动较小", "保留无法从产品入口触发的死代码", "不采用"],
+            ["删除发布脚本和专用测试", "边界一致 消除孤立维护面", "不再提供上游 ClawHub 发布能力", "采用"],
+        ],
+        widths=[1.75, 2.0, 2.25, 1.0],
+        font_size=8.7,
+    )
+
+    add_heading(doc, "十之四 实现内容", 2)
+    add_bullets(
+        doc,
+        [
+            "删除 github scripts check clawhub version mjs",
+            "删除 github scripts publish openmaic skill sh",
+            "删除 tests ci check clawhub version test ts",
+            "删除 tests ci publish openmaic skill test ts",
+            "全仓搜索确认没有剩余 ClawHub 发布引用",
+        ],
+    )
+
+    add_heading(doc, "十之五 验证结果", 2)
+    add_table(
+        doc,
+        ["验证项", "结果", "证据或限制"],
+        [
+            ["PR 静态质量门禁", "通过", "Prettier ESLint TypeScript 和 i18n 已在 GitHub Runner 通过"],
+            ["失效引用搜索", "通过", "tests github scripts 和 package json 中无 ClawHub 发布引用"],
+            ["ContractOps 后端门禁", "通过", "Ruff mypy strict 和 24 项 pytest 通过"],
+            ["PR 根仓库单测", "待复跑", "删除孤立测试后由新提交触发"],
+            ["合并 main", "待审批", "PR 全绿后仍需项目负责人明确批准"],
+        ],
+        widths=[1.65, 1.0, 4.3],
+        font_size=8.8,
+    )
+
+    add_heading(doc, "十之六 后续动作", 2)
+    add_numbered(
+        doc,
+        [
+            "把清理提交追加到现有 fix ci prettier gate PR 分支",
+            "等待 PR 的根仓库单测和主镜像构建全部完成",
+            "检查全部状态后向项目负责人请求审批 不自动合并",
         ],
     )
 
 
 def add_decisions_and_risks(doc: Document) -> None:
-    add_heading(doc, "九 当前决策记录", 1)
+    add_heading(doc, "十一 当前决策记录", 1)
     add_table(
         doc,
         ["编号", "决策", "原因", "重新评估条件"],
@@ -898,12 +1050,14 @@ def add_decisions_and_risks(doc: Document) -> None:
             ["ADR 009", "Alembic 管理数据库版本", "让升级 回滚和部署顺序可以复现", "不能退回容器初始化目录直接建业务表"],
             ["ADR 010", "统一错误信封和请求上下文", "客户端和审计可以依靠稳定错误码和请求 ID", "只允许兼容性扩展"],
             ["ADR 011", "CI Shell 脚本由 Bash 显式调用", "避免 Windows 和 API 上传丢失可执行位", "只有上传链路稳定保留 100755 时才评估简化"],
+            ["ADR 012", "阶段成果使用独立分支和 PR 审批", "让 main 只接收经过检查和人工批准的变更", "只有项目负责人明确调整交付流程时变更"],
+            ["ADR 013", "移除 ClawHub 发布子系统", "ContractOps 不发布 OpenMAIC skill 且工作流已经删除", "只有产品重新承担上游 skill 发布职责时重建"],
         ],
         widths=[0.8, 1.6, 2.6, 1.9],
         font_size=8.7,
     )
 
-    add_heading(doc, "十 风险登记", 1)
+    add_heading(doc, "十二 风险登记", 1)
     add_table(
         doc,
         ["风险", "影响", "当前控制", "后续验证"],
@@ -917,6 +1071,8 @@ def add_decisions_and_risks(doc: Document) -> None:
             ["合同修订覆盖历史", "审计链丢失", "版本不可变 驳回后创建新版本", "版本 Diff 和回滚测试"],
             ["迁移权限泄露给运行服务", "应用漏洞可能修改结构或绕过隔离", "迁移 URL 与运行 URL 分离 migrate 服务短期运行", "CI 检查运行角色权限和生产密钥配置"],
             ["跨平台文件模式丢失", "Linux CI 脚本在任务开始时退出 126", "工作流显式使用 Bash 调用脚本", "每次迁移上传方式后观察 CI 自检"],
+            ["上游格式债阻断阶段交付", "业务代码通过但根仓库质量门禁失败", "按日志修复具体文件 不扩大忽略范围", "PR 中运行完整 Prettier 和现有 CI"],
+            ["删除入口后遗留测试和脚本", "后续单测读取不存在文件或死代码持续维护", "删除功能时同步清理脚本 测试和引用", "PR 完整单测和全仓引用搜索"],
         ],
         widths=[1.45, 1.55, 2.45, 1.45],
         font_size=8.7,
@@ -924,7 +1080,7 @@ def add_decisions_and_risks(doc: Document) -> None:
 
 
 def add_update_template(doc: Document) -> None:
-    add_heading(doc, "十一 后续更新记录模板", 1)
+    add_heading(doc, "十三 后续更新记录模板", 1)
     add_paragraph(
         doc,
         "复制本节并替换方括号内容 新记录必须追加在历史记录之后 不修改已经完成的决策说明",
@@ -970,8 +1126,7 @@ def add_update_template(doc: Document) -> None:
             "数据迁移和配置变更可以回退",
             "测试结果写明实际执行环境",
             "没有把计划能力描述为已完成",
-            "新增决策已经同步到当前决策记录",
-            "新增风险已经同步到风险登记",
+            "新增决策和新增风险已经分别同步到当前决策记录与风险登记",
         ],
     )
 
@@ -985,6 +1140,8 @@ def build_document(output_path: Path) -> None:
     add_update_002(document)
     add_update_003(document)
     add_update_004(document)
+    add_update_005(document)
+    add_update_006(document)
     add_decisions_and_risks(document)
     add_update_template(document)
 

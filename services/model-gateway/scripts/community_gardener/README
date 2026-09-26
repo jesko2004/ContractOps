@@ -26,8 +26,8 @@ If all the above looks good click "Approve workflows to run".
 Abandoned: PRs that have been idle for 7 days can be closed as abandoned, with a note to re-open if necessary.
 
 Slop:
- - If you read the first sentence of the description three times and still don't understand it that usually means it's slop. Close it with a note asking the author to re-write the description.
- - Our CONTRIBUTING guide says "Using AI tools to write code is fine, but you must understand and be able to explain every change in your PR.". If you feel that's not the case close it with that quote.
+
+- If you read the first sentence of the description three times and still don't understand it that usually means it's slop. Close it with a note asking the author to re-write the description.
+- Our CONTRIBUTING guide says "Using AI tools to write code is fine, but you must understand and be able to explain every change in your PR.". If you feel that's not the case close it with that quote.
 
 Out of scope: Attempts to productionize the demo server (Kubernetes, authentication). Tools that should live outside our repo, such as dashboard and CLIs. And really anything not directly related to routing.
-
