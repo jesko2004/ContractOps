@@ -32,11 +32,15 @@ ContractOps/
 - 由 Alembic 管理的 PostgreSQL/pgvector 初始数据模型、升级与回滚脚本；
 - 带一次性 `migrate` 服务的开发 Compose，以及隔离的测试 Compose；
 - ContractOps API 专用 CI，执行 Ruff、mypy、pytest、空库迁移往返和 Compose 配置检查；
+- HS256 JWT 租户上下文、角色与部门数据范围校验，以及稳定的认证/授权错误码；
+- Contract、ContractVersion PostgreSQL Repository 与事务级 RLS 上下文；
+- 合同创建、查询和不可变版本登记 API，支持租户级幂等键和对象键隔离；
+- 多租户隔离、重复请求重放、版本不可覆盖的数据库集成测试；
 - 产品边界、API 草案、里程碑、验收标准和持续更新记录。
 
-尚未实现：身份认证、数据库 Repository、审批策略与待办接口、可靠事件、履约调度、
-风险升级和通知适配器。文档解析和模型调用安排在核心业务闭环完成之后。骨架不会把
-规划能力表述为已完成。
+尚未实现：审批策略与待办接口、可靠事件、履约调度、风险升级、对象存储直传和通知
+适配器。文档解析和模型调用安排在核心业务闭环完成之后。项目不会把规划能力表述为
+已完成。
 
 ## 本地启动
 
@@ -63,7 +67,14 @@ cd services/contract-api
 - `GET http://localhost:8080/health/live`
 - `GET http://localhost:8080/health/ready`
 - `GET http://localhost:8080/v1/system/info`
+- `POST http://localhost:8080/v1/contracts`
+- `GET http://localhost:8080/v1/contracts/{contract_id}`
+- `POST http://localhost:8080/v1/contracts/{contract_id}/versions`
 - `GET http://localhost:8080/docs`
+
+合同接口需要 HS256 JWT。令牌声明包括 `tenant_id`、`sub`、`roles`、
+`department_ids` 和 `data_scope`；两个写接口还需要 `Idempotency-Key` 请求头。开发环境
+示例配置见 `services/contract-api/.env.example`，部署前必须替换示例密钥。
 
 ### 启动本地依赖
 

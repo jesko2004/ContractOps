@@ -1,7 +1,10 @@
 from typing import Literal
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from pydantic import BaseModel
+
+from contractops.errors import ContractOpsError
+from contractops.infrastructure.postgres import Database
 
 router = APIRouter(prefix="/health", tags=["health"])
 
@@ -16,7 +19,15 @@ async def liveness() -> HealthResponse:
 
 
 @router.get("/ready", response_model=HealthResponse)
-async def readiness() -> HealthResponse:
-    # Dependency probes are added with the persistence adapters in M1. Until then,
-    # readiness means the process loaded its configuration and routes successfully.
+def readiness(request: Request) -> HealthResponse:
+    database = getattr(request.app.state, "database", None)
+    if isinstance(database, Database):
+        try:
+            database.check()
+        except Exception as exc:
+            raise ContractOpsError(
+                code="dependency_unavailable",
+                message="a required service is unavailable",
+                status_code=503,
+            ) from exc
     return HealthResponse(status="ready")

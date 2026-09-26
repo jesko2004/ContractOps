@@ -20,6 +20,11 @@ class Settings(BaseSettings):
     api_prefix: str = "/v1"
     log_level: str = "INFO"
 
+    jwt_secret: str = Field(default="contractops-dev-jwt-secret-change-me", repr=False)
+    jwt_issuer: str = "contractops"
+    jwt_audience: str = "contractops-api"
+    jwt_leeway_seconds: int = 30
+
     database_url: str = (
         "postgresql://contractops_app:contractops-app-dev@localhost:55432/contractops"
     )

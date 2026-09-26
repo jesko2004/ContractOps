@@ -1,4 +1,8 @@
+from dataclasses import dataclass
+from datetime import date, datetime
+from decimal import Decimal
 from enum import StrEnum
+from uuid import UUID
 
 
 class ContractStatus(StrEnum):
@@ -12,6 +16,52 @@ class ContractStatus(StrEnum):
     SUSPENDED = "SUSPENDED"
     TERMINATED = "TERMINATED"
     EXPIRED = "EXPIRED"
+
+
+class ContractVersionStatus(StrEnum):
+    UPLOADING = "UPLOADING"
+    UPLOADED = "UPLOADED"
+    PARSING = "PARSING"
+    READY = "READY"
+    FAILED = "FAILED"
+    ARCHIVED = "ARCHIVED"
+
+
+@dataclass(frozen=True, slots=True)
+class ContractVersion:
+    id: UUID
+    contract_id: UUID
+    version_number: int
+    status: ContractVersionStatus
+    object_key: str
+    file_name: str
+    media_type: str
+    size_bytes: int
+    content_hash: str
+    created_by: UUID
+    created_at: datetime
+
+
+@dataclass(frozen=True, slots=True)
+class Contract:
+    id: UUID
+    tenant_id: UUID
+    contract_number: str | None
+    title: str
+    contract_type: str
+    counterparty_name: str | None
+    department_id: UUID
+    amount: Decimal | None
+    currency: str | None
+    valid_from: date | None
+    valid_until: date | None
+    status: ContractStatus
+    current_version_id: UUID | None
+    state_version: int
+    created_by: UUID
+    created_at: datetime
+    updated_at: datetime
+    versions: tuple[ContractVersion, ...] = ()
 
 
 class InvalidContractTransition(ValueError):
