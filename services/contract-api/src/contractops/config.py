@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     event_lease_seconds: int = Field(default=30, ge=5, le=3600)
     event_claim_idle_ms: int = Field(default=30_000, ge=1000, le=3_600_000)
     event_poll_interval_seconds: float = Field(default=0.5, ge=0.05, le=60)
+    obligation_batch_size: int = Field(default=100, ge=1, le=1000)
+    obligation_lease_seconds: int = Field(default=30, ge=5, le=3600)
+    obligation_poll_interval_seconds: float = Field(default=5, ge=0.1, le=300)
     notification_webhook_url: str | None = None
     notification_webhook_secret: str | None = Field(default=None, repr=False)
     object_store_endpoint: str = "http://localhost:59000"

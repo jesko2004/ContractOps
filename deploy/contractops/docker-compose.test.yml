@@ -90,6 +90,18 @@ services:
       redis:
         condition: service_healthy
 
+  obligation-scheduler:
+    build:
+      context: ../../services/contract-api
+      target: runtime
+    command: ["contractops-scheduler", "--once"]
+    environment:
+      CONTRACTOPS_ENVIRONMENT: test
+      CONTRACTOPS_WORKER_DATABASE_URL: postgresql://contractops_worker:contractops-worker-test@postgres:5432/contractops_test
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
   checks:
     build:
       context: ../../services/contract-api
