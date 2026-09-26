@@ -173,7 +173,7 @@ def configure_document(doc: Document) -> None:
     header = section.header
     header_paragraph = header.paragraphs[0]
     header_paragraph.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    run = header_paragraph.add_run("ContractOps 项目更新记录  版本 0.5")
+    run = header_paragraph.add_run("ContractOps 项目更新记录  版本 0.6")
     set_run_font(run, size=8.5, color=BLACK)
 
     footer = section.footer
@@ -289,7 +289,7 @@ def add_cover(doc: Document) -> None:
         ["项目字段", "当前内容"],
         [
             ["项目名称", "ContractOps 企业合同审批与履约风控后端服务"],
-            ["文档版本", "0.5"],
+            ["文档版本", "0.6"],
             ["最后更新", "2026 年 9 月 26 日"],
             ["维护方式", "每次源代码更新后追加一条更新记录 不覆盖历史决策"],
             ["主要读者", "项目开发者 代码评审者 面试准备人员"],
@@ -384,7 +384,14 @@ def add_foundation_sections(doc: Document) -> None:
                 "2026 09 26",
                 "清理模型网关格式债并建立阶段 PR 审批流程",
                 "格式化日志命中的八个文件并改用独立分支交付",
-                "完整 Prettier 检查通过 PR CI 待运行",
+                "完整 Prettier 检查和 PR 静态检查通过",
+            ],
+            [
+                "UPD 006",
+                "2026 09 26",
+                "移除失去工作流的 ClawHub 发布测试子系统",
+                "删除两个发布脚本及其两组专用测试",
+                "引用清理通过 PR 完整单测待复跑",
             ],
         ],
         widths=[0.7, 0.9, 2.0, 2.1, 1.35],
@@ -957,8 +964,77 @@ def add_update_005(doc: Document) -> None:
     )
 
 
+def add_update_006(doc: Document) -> None:
+    add_heading(doc, "十 更新记录 UPD 006", 1)
+
+    add_heading(doc, "十之一 更新目标", 2)
+    add_paragraph(
+        doc,
+        "修复 PR 质量作业在根仓库 Unit Tests 阶段出现的 ENOENT 错误 "
+        "让已删除的 OpenMAIC ClawHub 发布工作流不再留下孤立脚本和失效测试",
+    )
+
+    add_heading(doc, "十之二 问题定位", 2)
+    add_paragraph(
+        doc,
+        "PR 运行 36228333475 已通过 Prettier ESLint TypeScript 和 i18n "
+        "随后 tests ci check clawhub version test ts 的五个用例尝试读取已经删除的 publish openmaic skill yml 并返回 ENOENT "
+        "仓库仍保留两个 ClawHub 发布脚本和两组专用测试 但 ContractOps 不再有对应发布入口",
+    )
+
+    add_heading(doc, "十之三 方案选择", 2)
+    add_table(
+        doc,
+        ["候选方案", "优点", "限制", "决定"],
+        [
+            ["恢复 OpenMAIC 发布工作流", "原测试可以继续运行", "重新引入与 ContractOps 无关的外部发布行为", "不采用"],
+            ["工作流不存在时跳过测试", "改动较小", "保留无法从产品入口触发的死代码", "不采用"],
+            ["删除发布脚本和专用测试", "边界一致 消除孤立维护面", "不再提供上游 ClawHub 发布能力", "采用"],
+        ],
+        widths=[1.75, 2.0, 2.25, 1.0],
+        font_size=8.7,
+    )
+
+    add_heading(doc, "十之四 实现内容", 2)
+    add_bullets(
+        doc,
+        [
+            "删除 github scripts check clawhub version mjs",
+            "删除 github scripts publish openmaic skill sh",
+            "删除 tests ci check clawhub version test ts",
+            "删除 tests ci publish openmaic skill test ts",
+            "全仓搜索确认没有剩余 ClawHub 发布引用",
+        ],
+    )
+
+    add_heading(doc, "十之五 验证结果", 2)
+    add_table(
+        doc,
+        ["验证项", "结果", "证据或限制"],
+        [
+            ["PR 静态质量门禁", "通过", "Prettier ESLint TypeScript 和 i18n 已在 GitHub Runner 通过"],
+            ["失效引用搜索", "通过", "tests github scripts 和 package json 中无 ClawHub 发布引用"],
+            ["ContractOps 后端门禁", "通过", "Ruff mypy strict 和 24 项 pytest 通过"],
+            ["PR 根仓库单测", "待复跑", "删除孤立测试后由新提交触发"],
+            ["合并 main", "待审批", "PR 全绿后仍需项目负责人明确批准"],
+        ],
+        widths=[1.65, 1.0, 4.3],
+        font_size=8.8,
+    )
+
+    add_heading(doc, "十之六 后续动作", 2)
+    add_numbered(
+        doc,
+        [
+            "把清理提交追加到现有 fix ci prettier gate PR 分支",
+            "等待 PR 的根仓库单测和主镜像构建全部完成",
+            "检查全部状态后向项目负责人请求审批 不自动合并",
+        ],
+    )
+
+
 def add_decisions_and_risks(doc: Document) -> None:
-    add_heading(doc, "十 当前决策记录", 1)
+    add_heading(doc, "十一 当前决策记录", 1)
     add_table(
         doc,
         ["编号", "决策", "原因", "重新评估条件"],
@@ -975,12 +1051,13 @@ def add_decisions_and_risks(doc: Document) -> None:
             ["ADR 010", "统一错误信封和请求上下文", "客户端和审计可以依靠稳定错误码和请求 ID", "只允许兼容性扩展"],
             ["ADR 011", "CI Shell 脚本由 Bash 显式调用", "避免 Windows 和 API 上传丢失可执行位", "只有上传链路稳定保留 100755 时才评估简化"],
             ["ADR 012", "阶段成果使用独立分支和 PR 审批", "让 main 只接收经过检查和人工批准的变更", "只有项目负责人明确调整交付流程时变更"],
+            ["ADR 013", "移除 ClawHub 发布子系统", "ContractOps 不发布 OpenMAIC skill 且工作流已经删除", "只有产品重新承担上游 skill 发布职责时重建"],
         ],
         widths=[0.8, 1.6, 2.6, 1.9],
         font_size=8.7,
     )
 
-    add_heading(doc, "十一 风险登记", 1)
+    add_heading(doc, "十二 风险登记", 1)
     add_table(
         doc,
         ["风险", "影响", "当前控制", "后续验证"],
@@ -995,6 +1072,7 @@ def add_decisions_and_risks(doc: Document) -> None:
             ["迁移权限泄露给运行服务", "应用漏洞可能修改结构或绕过隔离", "迁移 URL 与运行 URL 分离 migrate 服务短期运行", "CI 检查运行角色权限和生产密钥配置"],
             ["跨平台文件模式丢失", "Linux CI 脚本在任务开始时退出 126", "工作流显式使用 Bash 调用脚本", "每次迁移上传方式后观察 CI 自检"],
             ["上游格式债阻断阶段交付", "业务代码通过但根仓库质量门禁失败", "按日志修复具体文件 不扩大忽略范围", "PR 中运行完整 Prettier 和现有 CI"],
+            ["删除入口后遗留测试和脚本", "后续单测读取不存在文件或死代码持续维护", "删除功能时同步清理脚本 测试和引用", "PR 完整单测和全仓引用搜索"],
         ],
         widths=[1.45, 1.55, 2.45, 1.45],
         font_size=8.7,
@@ -1002,7 +1080,7 @@ def add_decisions_and_risks(doc: Document) -> None:
 
 
 def add_update_template(doc: Document) -> None:
-    add_heading(doc, "十二 后续更新记录模板", 1)
+    add_heading(doc, "十三 后续更新记录模板", 1)
     add_paragraph(
         doc,
         "复制本节并替换方括号内容 新记录必须追加在历史记录之后 不修改已经完成的决策说明",
@@ -1063,6 +1141,7 @@ def build_document(output_path: Path) -> None:
     add_update_003(document)
     add_update_004(document)
     add_update_005(document)
+    add_update_006(document)
     add_decisions_and_risks(document)
     add_update_template(document)
 
