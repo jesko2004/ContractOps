@@ -6,6 +6,7 @@ from typing import Annotated, cast
 from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
+from contractops.application.approvals import ApprovalService
 from contractops.application.contracts import ContractService
 from contractops.auth import JWTDecoder
 from contractops.context import (
@@ -40,3 +41,7 @@ async def authenticated_actor(
 
 def get_contract_service(request: Request) -> ContractService:
     return cast(ContractService, request.app.state.contract_service)
+
+
+def get_approval_service(request: Request) -> ApprovalService:
+    return cast(ApprovalService, request.app.state.approval_service)

@@ -78,6 +78,8 @@ class ContractService:
         Role.CONTRACT_OWNER,
         Role.APPROVER,
         Role.LEGAL_ADMIN,
+        Role.FINANCE_APPROVER,
+        Role.BUSINESS_APPROVER,
         Role.AUDITOR,
         Role.TENANT_ADMIN,
     )

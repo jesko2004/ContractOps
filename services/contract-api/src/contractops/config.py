@@ -16,7 +16,7 @@ class Settings(BaseSettings):
 
     app_name: str = "ContractOps API"
     environment: str = "development"
-    version: str = "0.1.0"
+    version: str = "0.2.0"
     api_prefix: str = "/v1"
     log_level: str = "INFO"
 
