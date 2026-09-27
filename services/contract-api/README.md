@@ -60,9 +60,19 @@ set CONTRACTOPS_WORKER_DATABASE_URL=postgresql://contractops_worker:contractops-
 ```
 
 The API runtime role remains subject to tenant RLS. The worker role has `BYPASSRLS`, but its grants
-are restricted to Outbox, notification-delivery, and dead-letter tables. Configure a Webhook only
+are restricted to event-delivery and obligation-scheduling tables. Configure a Webhook only
 through trusted deployment settings. Webhook requests include a stable `Idempotency-Key` and an
 optional `X-ContractOps-Signature` HMAC-SHA256 header.
+
+Run the lease-based obligation scheduler with the same restricted worker identity:
+
+```bash
+set CONTRACTOPS_WORKER_DATABASE_URL=postgresql://contractops_worker:contractops-worker-dev@localhost:55432/contractops
+.venv/Scripts/contractops-scheduler
+```
+
+The scheduler uses `FOR UPDATE SKIP LOCKED`, persistent leases, and a reminder unique key. A
+terminated contract atomically cancels active obligations so later scans cannot emit reminders.
 
 ## Authentication and contract ledger
 

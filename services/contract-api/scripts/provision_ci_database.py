@@ -56,12 +56,20 @@ def main() -> None:
             )
         )
         connection.execute("GRANT USAGE ON SCHEMA public TO contractops_worker")
-        connection.execute("GRANT SELECT, UPDATE ON outbox_events TO contractops_worker")
+        connection.execute("GRANT SELECT, INSERT, UPDATE ON outbox_events TO contractops_worker")
         connection.execute(
             "GRANT SELECT, INSERT, UPDATE ON notification_deliveries TO contractops_worker"
         )
         connection.execute(
             "GRANT SELECT, INSERT, UPDATE ON event_dead_letters TO contractops_worker"
+        )
+        connection.execute("GRANT SELECT ON contracts TO contractops_worker")
+        connection.execute("GRANT SELECT, UPDATE ON obligations TO contractops_worker")
+        connection.execute(
+            "GRANT SELECT, INSERT, UPDATE ON risk_events TO contractops_worker"
+        )
+        connection.execute(
+            "GRANT SELECT, INSERT, UPDATE ON obligation_reminders TO contractops_worker"
         )
 
 

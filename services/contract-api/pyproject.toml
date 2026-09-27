@@ -21,6 +21,7 @@ dependencies = [
 
 [project.scripts]
 contractops-worker = "contractops.worker:main"
+contractops-scheduler = "contractops.scheduler:main"
 
 [project.optional-dependencies]
 dev = [

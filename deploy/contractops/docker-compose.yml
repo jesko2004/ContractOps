@@ -54,6 +54,21 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  obligation-scheduler:
+    build:
+      context: ../../services/contract-api
+    command: ["contractops-scheduler"]
+    environment:
+      CONTRACTOPS_ENVIRONMENT: development
+      CONTRACTOPS_WORKER_DATABASE_URL: postgresql://contractops_worker:contractops-worker-dev@postgres:5432/contractops
+      CONTRACTOPS_OBLIGATION_BATCH_SIZE: 100
+      CONTRACTOPS_OBLIGATION_LEASE_SECONDS: 30
+      CONTRACTOPS_OBLIGATION_POLL_INTERVAL_SECONDS: 5
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
   migrate:
     build:
       context: ../../services/contract-api
