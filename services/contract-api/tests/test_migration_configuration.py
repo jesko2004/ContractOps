@@ -28,8 +28,21 @@ def test_alembic_baseline_files_are_present() -> None:
     ).is_file()
     assert (SERVICE_ROOT / "migrations" / "sql" / "0005_m4_obligation_risk.up.sql").is_file()
     assert (SERVICE_ROOT / "migrations" / "sql" / "0005_m4_obligation_risk.down.sql").is_file()
+    assert (
+        SERVICE_ROOT / "migrations" / "versions" / "20260927_0006_m5_audit_observability.py"
+    ).is_file()
+    assert (SERVICE_ROOT / "migrations" / "sql" / "0006_m5_audit_observability.up.sql").is_file()
+    assert (
+        SERVICE_ROOT / "migrations" / "sql" / "0006_m5_audit_observability.down.sql"
+    ).is_file()
     provisioner = (SERVICE_ROOT / "scripts" / "provision_ci_database.py").read_text(
         encoding="utf-8"
     )
-    for table in ("contracts", "obligations", "risk_events", "obligation_reminders"):
+    for table in (
+        "contracts",
+        "obligations",
+        "risk_events",
+        "obligation_reminders",
+        "audit_events",
+    ):
         assert f"ON {table} TO contractops_worker" in provisioner

@@ -14,6 +14,7 @@ services:
       CONTRACTOPS_JWT_SECRET: contractops-local-jwt-secret-replace-before-sharing
       CONTRACTOPS_JWT_ISSUER: contractops
       CONTRACTOPS_JWT_AUDIENCE: contractops-api
+      CONTRACTOPS_OTEL_EXPORTER_OTLP_ENDPOINT: ${CONTRACTOPS_OTEL_EXPORTER_OTLP_ENDPOINT:-}
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -47,12 +48,16 @@ services:
       CONTRACTOPS_EVENT_CONSUMER_NAME: contractops-worker-local
       CONTRACTOPS_NOTIFICATION_WEBHOOK_URL: ${CONTRACTOPS_NOTIFICATION_WEBHOOK_URL:-}
       CONTRACTOPS_NOTIFICATION_WEBHOOK_SECRET: ${CONTRACTOPS_NOTIFICATION_WEBHOOK_SECRET:-}
+      CONTRACTOPS_OTEL_EXPORTER_OTLP_ENDPOINT: ${CONTRACTOPS_OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      CONTRACTOPS_WORKER_METRICS_PORT: 9101
     depends_on:
       migrate:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
     restart: unless-stopped
+    expose:
+      - "9101"
 
   obligation-scheduler:
     build:
@@ -64,10 +69,14 @@ services:
       CONTRACTOPS_OBLIGATION_BATCH_SIZE: 100
       CONTRACTOPS_OBLIGATION_LEASE_SECONDS: 30
       CONTRACTOPS_OBLIGATION_POLL_INTERVAL_SECONDS: 5
+      CONTRACTOPS_OTEL_EXPORTER_OTLP_ENDPOINT: ${CONTRACTOPS_OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      CONTRACTOPS_SCHEDULER_METRICS_PORT: 9102
     depends_on:
       migrate:
         condition: service_completed_successfully
     restart: unless-stopped
+    expose:
+      - "9102"
 
   migrate:
     build:
@@ -127,7 +136,44 @@ services:
       - contractops-minio:/data
     restart: unless-stopped
 
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    profiles: ["observability"]
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - contractops-prometheus:/prometheus
+    ports:
+      - "59090:9090"
+    restart: unless-stopped
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.136.0
+    profiles: ["observability"]
+    command: ["--config=/etc/otelcol/config.yml"]
+    volumes:
+      - ./observability/otel-collector.yml:/etc/otelcol/config.yml:ro
+    ports:
+      - "54318:4318"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:12.2.0
+    profiles: ["observability"]
+    environment:
+      GF_SECURITY_ADMIN_USER: contractops
+      GF_SECURITY_ADMIN_PASSWORD: ${CONTRACTOPS_GRAFANA_PASSWORD:-contractops-dev}
+    volumes:
+      - contractops-grafana:/var/lib/grafana
+    ports:
+      - "53000:3000"
+    restart: unless-stopped
+
 volumes:
   contractops-postgres:
   contractops-redis:
   contractops-minio:
+  contractops-prometheus:
+  contractops-grafana:

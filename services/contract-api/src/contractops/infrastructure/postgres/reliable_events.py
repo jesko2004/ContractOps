@@ -111,17 +111,30 @@ class PostgresWorkerEventStore:
 
     def mark_published(self, event_id: UUID, stream_message_id: str) -> None:
         with self._database.transaction() as connection:
-            connection.execute(
+            row = connection.execute(
                 text(
                     """
                     UPDATE outbox_events
                     SET published_at = now(), stream_message_id = :stream_message_id,
                         locked_by = NULL, locked_until = NULL, last_error = NULL
                     WHERE id = :event_id AND published_at IS NULL
+                    RETURNING tenant_id, request_id, trace_id
                     """
                 ),
                 {"event_id": event_id, "stream_message_id": stream_message_id},
-            )
+            ).mappings().one_or_none()
+            if row is not None:
+                self._insert_operation_audit(
+                    connection,
+                    tenant_id=row["tenant_id"],
+                    action="outbox.published",
+                    resource_type="outbox_event",
+                    resource_id=event_id,
+                    outcome="SUCCEEDED",
+                    request_id=row["request_id"],
+                    trace_id=row["trace_id"],
+                    metadata={"stream_message_id": stream_message_id},
+                )
 
     def mark_publish_failed(
         self, event: OutboxEvent, *, error: Exception, retry_delay: timedelta
@@ -178,6 +191,17 @@ class PostgresWorkerEventStore:
                         "error_message": error_message,
                     },
                 )
+            self._insert_operation_audit(
+                connection,
+                tenant_id=event.tenant_id,
+                action="outbox.publish_failed",
+                resource_type="outbox_event",
+                resource_id=event.id,
+                outcome="FAILED",
+                request_id=event.request_id,
+                trace_id=event.trace_id,
+                metadata={"error_code": error_code, "dead_lettered": dead},
+            )
             return dead
 
     def get_event(self, event_id: UUID) -> OutboxEvent | None:
@@ -296,6 +320,17 @@ class PostgresWorkerEventStore:
                     "destination": destination,
                 },
             )
+            self._insert_operation_audit(
+                connection,
+                tenant_id=event.tenant_id,
+                action="notification.delivered",
+                resource_type="outbox_event",
+                resource_id=event.id,
+                outcome="SUCCEEDED",
+                request_id=event.request_id,
+                trace_id=event.trace_id,
+                metadata={"channel": channel, "destination": destination},
+            )
 
     def mark_delivery_failed(
         self,
@@ -369,7 +404,60 @@ class PostgresWorkerEventStore:
                         "error_message": error_message,
                     },
                 )
+            self._insert_operation_audit(
+                connection,
+                tenant_id=event.tenant_id,
+                action="notification.delivery_failed",
+                resource_type="outbox_event",
+                resource_id=event.id,
+                outcome="FAILED",
+                request_id=event.request_id,
+                trace_id=event.trace_id,
+                metadata={
+                    "channel": channel,
+                    "destination": destination,
+                    "error_code": error_code,
+                    "dead_lettered": dead,
+                },
+            )
             return dead
+
+    @staticmethod
+    def _insert_operation_audit(
+        connection: Any,
+        *,
+        tenant_id: UUID,
+        action: str,
+        resource_type: str,
+        resource_id: UUID,
+        outcome: str,
+        request_id: str | None,
+        trace_id: str | None,
+        metadata: dict[str, Any],
+    ) -> None:
+        connection.execute(
+            text(
+                """
+                INSERT INTO audit_events (
+                    tenant_id, category, action, resource_type, resource_id,
+                    outcome, request_id, trace_id, metadata
+                ) VALUES (
+                    :tenant_id, 'OPERATION', :action, :resource_type, :resource_id,
+                    :outcome, :request_id, :trace_id, CAST(:metadata AS jsonb)
+                )
+                """
+            ),
+            {
+                "tenant_id": tenant_id,
+                "action": action,
+                "resource_type": resource_type,
+                "resource_id": resource_id,
+                "outcome": outcome,
+                "request_id": request_id,
+                "trace_id": trace_id,
+                "metadata": json.dumps(metadata),
+            },
+        )
 
     @staticmethod
     def _insert_dead_letter(

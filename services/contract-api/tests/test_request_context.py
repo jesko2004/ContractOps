@@ -11,7 +11,8 @@ def test_request_context_is_available_to_endpoint() -> None:
 
     @router.get("/test/context")
     async def context_endpoint() -> dict[str, str]:
-        return {"request_id": get_request_context().request_id}
+        context = get_request_context()
+        return {"request_id": context.request_id, "trace_id": context.trace_id}
 
     app.include_router(router)
 
@@ -20,6 +21,7 @@ def test_request_context_is_available_to_endpoint() -> None:
 
     assert response.status_code == 200
     assert response.json()["request_id"] == response.headers["X-Request-ID"]
+    assert response.json()["trace_id"] == response.headers["X-Trace-ID"]
 
 
 def test_request_context_is_not_available_outside_request() -> None:

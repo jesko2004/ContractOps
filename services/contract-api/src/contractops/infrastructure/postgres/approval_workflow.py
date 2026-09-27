@@ -914,18 +914,21 @@ class PostgresApprovalWorkflow(ApprovalWorkflow):
         payload: dict[str, str],
     ) -> None:
         try:
-            request_id = get_request_context().request_id
+            request_context = get_request_context()
+            request_id = request_context.request_id
+            trace_id = request_context.trace_id
         except RuntimeError:
             request_id = None
+            trace_id = None
         connection.execute(
             text(
                 """
                 INSERT INTO outbox_events (
                     tenant_id, event_type, aggregate_type, aggregate_id, payload,
-                    request_id
+                    request_id, trace_id
                 ) VALUES (
                     :tenant_id, :event_type, :aggregate_type, :aggregate_id,
-                    CAST(:payload AS jsonb), :request_id
+                    CAST(:payload AS jsonb), :request_id, :trace_id
                 )
                 """
             ),
@@ -936,5 +939,30 @@ class PostgresApprovalWorkflow(ApprovalWorkflow):
                 "aggregate_id": aggregate_id,
                 "payload": json.dumps(payload),
                 "request_id": request_id,
+                "trace_id": trace_id,
+            },
+        )
+        connection.execute(
+            text(
+                """
+                INSERT INTO audit_events (
+                    tenant_id, actor_id, category, action, resource_type,
+                    resource_id, outcome, request_id, trace_id, metadata
+                ) VALUES (
+                    :tenant_id, :actor_id, 'BUSINESS', :event_type,
+                    :aggregate_type, :aggregate_id, 'SUCCEEDED', :request_id,
+                    :trace_id, CAST(:payload AS jsonb)
+                )
+                """
+            ),
+            {
+                "tenant_id": actor.tenant_id,
+                "actor_id": actor.user_id,
+                "event_type": event_type,
+                "aggregate_type": aggregate_type,
+                "aggregate_id": aggregate_id,
+                "payload": json.dumps(payload),
+                "request_id": request_id,
+                "trace_id": trace_id,
             },
         )

@@ -41,6 +41,10 @@ class Settings(BaseSettings):
     obligation_batch_size: int = Field(default=100, ge=1, le=1000)
     obligation_lease_seconds: int = Field(default=30, ge=5, le=3600)
     obligation_poll_interval_seconds: float = Field(default=5, ge=0.1, le=300)
+    otel_service_name: str = "contractops-api"
+    otel_exporter_otlp_endpoint: str | None = None
+    worker_metrics_port: int = 9101
+    scheduler_metrics_port: int = 9102
     notification_webhook_url: str | None = None
     notification_webhook_secret: str | None = Field(default=None, repr=False)
     object_store_endpoint: str = "http://localhost:59000"

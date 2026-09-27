@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import logging
 import socket
 import time
 from datetime import UTC, datetime
@@ -12,6 +11,7 @@ from contractops.infrastructure.postgres import (
     PostgresSchedulerObligationStore,
     WorkerDatabase,
 )
+from contractops.observability import configure_logging, configure_tracing, start_metrics_server
 
 
 def main() -> None:
@@ -21,7 +21,12 @@ def main() -> None:
     settings = get_settings()
     if not settings.worker_database_url:
         raise SystemExit("CONTRACTOPS_WORKER_DATABASE_URL is required")
-    logging.basicConfig(level=settings.log_level)
+    configure_logging(settings.log_level)
+    configure_tracing(
+        service_name=f"{settings.otel_service_name}-scheduler",
+        endpoint=settings.otel_exporter_otlp_endpoint,
+    )
+    start_metrics_server(settings.scheduler_metrics_port)
     database = WorkerDatabase(settings.worker_database_url)
     scheduler = ObligationScheduler(
         PostgresSchedulerObligationStore(database),

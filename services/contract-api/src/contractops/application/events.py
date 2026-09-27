@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from collections.abc import Sequence
 from datetime import timedelta
 from typing import Protocol
@@ -13,6 +14,9 @@ from contractops.domain.events import (
     StreamMessage,
 )
 from contractops.errors import ContractOpsError
+from contractops.observability import WORKER_OPERATIONS, start_worker_span
+
+logger = logging.getLogger("contractops.worker")
 
 
 class EventStream(Protocol):
@@ -108,14 +112,46 @@ class OutboxPublisher:
             batch_size=self._batch_size,
             lease_seconds=self._lease_seconds,
         ):
-            try:
-                message_id = self._stream.publish(event)
-            except Exception as exc:
-                delay = timedelta(seconds=min(300, 2 ** min(event.attempt_count, 8)))
-                self._store.mark_publish_failed(event, error=exc, retry_delay=delay)
-            else:
-                self._store.mark_published(event.id, message_id)
-                published += 1
+            with start_worker_span(
+                "outbox.publish",
+                trace_id=event.trace_id,
+                attributes={
+                    "messaging.message.id": str(event.id),
+                    "contractops.event.type": event.event_type,
+                },
+            ) as span:
+                try:
+                    message_id = self._stream.publish(event)
+                except Exception as exc:
+                    span.record_exception(exc)
+                    span.set_attribute("contractops.outcome", "failed")
+                    delay = timedelta(seconds=min(300, 2 ** min(event.attempt_count, 8)))
+                    dead = self._store.mark_publish_failed(
+                        event, error=exc, retry_delay=delay
+                    )
+                    WORKER_OPERATIONS.labels(
+                        operation="outbox_publish",
+                        outcome="dead" if dead else "retry",
+                    ).inc()
+                    logger.warning(
+                        "outbox publish failed",
+                        extra={
+                            "event_name": "outbox.publish.failed",
+                            "request_id": event.request_id,
+                            "trace_id": event.trace_id,
+                            "tenant_id": event.tenant_id,
+                            "resource_type": "outbox_event",
+                            "resource_id": event.id,
+                            "outcome": "dead" if dead else "retry",
+                        },
+                    )
+                else:
+                    self._store.mark_published(event.id, message_id)
+                    WORKER_OPERATIONS.labels(
+                        operation="outbox_publish", outcome="succeeded"
+                    ).inc()
+                    span.set_attribute("contractops.outcome", "succeeded")
+                    published += 1
         return published
 
 
@@ -185,25 +221,55 @@ class NotificationConsumer:
             if reservation is DeliveryReservation.BUSY:
                 all_terminal = False
                 continue
-            try:
-                adapter.send(event, idempotency_key=event.idempotency_key)
-            except Exception as exc:
-                dead = self._store.mark_delivery_failed(
-                    event,
-                    channel=adapter.channel,
-                    destination=adapter.destination,
-                    error=exc,
-                    retry_delay=timedelta(
-                        seconds=min(300, 2 ** min(event.attempt_count + 1, 8))
-                    ),
-                )
-                all_terminal = all_terminal and dead
-            else:
-                self._store.mark_delivery_succeeded(
-                    event,
-                    channel=adapter.channel,
-                    destination=adapter.destination,
-                )
+            with start_worker_span(
+                "notification.deliver",
+                trace_id=event.trace_id,
+                attributes={
+                    "messaging.message.id": str(event.id),
+                    "contractops.notification.channel": adapter.channel,
+                },
+            ) as span:
+                try:
+                    adapter.send(event, idempotency_key=event.idempotency_key)
+                except Exception as exc:
+                    span.record_exception(exc)
+                    span.set_attribute("contractops.outcome", "failed")
+                    dead = self._store.mark_delivery_failed(
+                        event,
+                        channel=adapter.channel,
+                        destination=adapter.destination,
+                        error=exc,
+                        retry_delay=timedelta(
+                            seconds=min(300, 2 ** min(event.attempt_count + 1, 8))
+                        ),
+                    )
+                    WORKER_OPERATIONS.labels(
+                        operation="notification_delivery",
+                        outcome="dead" if dead else "retry",
+                    ).inc()
+                    logger.warning(
+                        "notification delivery failed",
+                        extra={
+                            "event_name": "notification.delivery.failed",
+                            "request_id": event.request_id,
+                            "trace_id": event.trace_id,
+                            "tenant_id": event.tenant_id,
+                            "resource_type": "outbox_event",
+                            "resource_id": event.id,
+                            "outcome": "dead" if dead else "retry",
+                        },
+                    )
+                    all_terminal = all_terminal and dead
+                else:
+                    self._store.mark_delivery_succeeded(
+                        event,
+                        channel=adapter.channel,
+                        destination=adapter.destination,
+                    )
+                    WORKER_OPERATIONS.labels(
+                        operation="notification_delivery", outcome="succeeded"
+                    ).inc()
+                    span.set_attribute("contractops.outcome", "succeeded")
         return all_terminal
 
 

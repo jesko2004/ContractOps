@@ -1,0 +1,33 @@
+groups:
+  - name: contractops-runtime
+    rules:
+      - alert: ContractOpsHighServerErrorRate
+        expr: |
+          sum(rate(contractops_http_requests_total{status=~"5.."}[5m]))
+          / clamp_min(sum(rate(contractops_http_requests_total[5m])), 0.001) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: ContractOps API 5xx rate exceeds 5%
+      - alert: ContractOpsWorkerFailures
+        expr: sum(increase(contractops_worker_operations_total{outcome=~"retry|dead"}[10m])) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: ContractOps event worker recorded a failed operation
+      - alert: ContractOpsSchedulerFailures
+        expr: sum(increase(contractops_scheduler_operations_total{outcome="failed"}[10m])) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: ContractOps obligation scheduler recorded a failed scan
+      - alert: ContractOpsSecurityDenialsSpike
+        expr: sum(increase(contractops_security_events_total[5m])) > 20
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: ContractOps authentication or authorization denials spiked

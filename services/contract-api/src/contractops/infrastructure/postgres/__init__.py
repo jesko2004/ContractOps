@@ -1,4 +1,8 @@
 from contractops.infrastructure.postgres.approval_workflow import PostgresApprovalWorkflow
+from contractops.infrastructure.postgres.audits import (
+    PostgresAuditRepository,
+    PostgresSecurityAuditRecorder,
+)
 from contractops.infrastructure.postgres.contract_ledger import PostgresContractLedger
 from contractops.infrastructure.postgres.database import Database, WorkerDatabase
 from contractops.infrastructure.postgres.obligations import (
@@ -12,11 +16,13 @@ from contractops.infrastructure.postgres.reliable_events import (
 
 __all__ = [
     "Database",
+    "PostgresAuditRepository",
     "PostgresApprovalWorkflow",
     "PostgresContractLedger",
     "PostgresEventAdminRepository",
     "PostgresObligationRepository",
     "PostgresSchedulerObligationStore",
+    "PostgresSecurityAuditRecorder",
     "PostgresWorkerEventStore",
     "WorkerDatabase",
 ]

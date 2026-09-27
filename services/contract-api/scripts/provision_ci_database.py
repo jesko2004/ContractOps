@@ -71,6 +71,7 @@ def main() -> None:
         connection.execute(
             "GRANT SELECT, INSERT, UPDATE ON obligation_reminders TO contractops_worker"
         )
+        connection.execute("GRANT INSERT ON audit_events TO contractops_worker")
 
 
 if __name__ == "__main__":
