@@ -7,6 +7,7 @@ from uuid import UUID, uuid4
 import psycopg
 import pytest
 from sqlalchemy import text
+from sqlalchemy.exc import DBAPIError
 
 from contractops.application.events import EventAdminService
 from contractops.context import ActorContext, DataScope, Role
@@ -21,6 +22,8 @@ from contractops.infrastructure.postgres import (
 RUNTIME_DATABASE_URL = os.getenv("CONTRACTOPS_INTEGRATION_DATABASE_URL")
 ADMIN_DATABASE_URL = os.getenv("CONTRACTOPS_INTEGRATION_ADMIN_DATABASE_URL")
 WORKER_DATABASE_URL = os.getenv("CONTRACTOPS_INTEGRATION_WORKER_DATABASE_URL")
+REQUEST_ID = "req_m5_correlation"
+TRACE_ID = "0123456789abcdef0123456789abcdef"
 
 pytestmark = pytest.mark.skipif(
     not RUNTIME_DATABASE_URL or not ADMIN_DATABASE_URL or not WORKER_DATABASE_URL,
@@ -56,14 +59,22 @@ def _insert_event(database: Database, actor: ActorContext) -> UUID:
             text(
                 """
                 INSERT INTO outbox_events (
-                    id, tenant_id, event_type, aggregate_type, aggregate_id, payload
+                    id, tenant_id, event_type, aggregate_type, aggregate_id, payload,
+                    request_id, trace_id
                 ) VALUES (
                     :id, :tenant_id, 'approval.step.approved',
-                    'approval_step', :aggregate_id, '{}'::jsonb
+                    'approval_step', :aggregate_id, '{}'::jsonb,
+                    :request_id, :trace_id
                 )
                 """
             ),
-            {"id": event_id, "tenant_id": actor.tenant_id, "aggregate_id": uuid4()},
+            {
+                "id": event_id,
+                "tenant_id": actor.tenant_id,
+                "aggregate_id": uuid4(),
+                "request_id": REQUEST_ID,
+                "trace_id": TRACE_ID,
+            },
         )
     return event_id
 
@@ -125,6 +136,33 @@ def test_delivery_deduplication_dead_letter_query_and_manual_replay() -> None:
         store.mark_delivery_succeeded(
             event, channel="LOG", destination="application-log"
         )
+        with runtime_database.transaction(actor) as connection:
+            audit_rows = connection.execute(
+                text(
+                    """
+                    SELECT action, request_id, trace_id
+                    FROM audit_events
+                    WHERE resource_id = :event_id
+                    ORDER BY occurred_at
+                    """
+                ),
+                {"event_id": event_id},
+            ).mappings().all()
+        assert [row["action"] for row in audit_rows] == [
+            "outbox.published",
+            "notification.delivered",
+        ]
+        assert {row["request_id"] for row in audit_rows} == {REQUEST_ID}
+        assert {row["trace_id"] for row in audit_rows} == {TRACE_ID}
+
+        with (
+            pytest.raises(DBAPIError, match="audit_events is append-only"),
+            runtime_database.transaction(actor) as connection,
+        ):
+            connection.execute(
+                text("UPDATE audit_events SET action = 'tampered' WHERE resource_id = :id"),
+                {"id": event_id},
+            )
         assert store.reserve_delivery(
             event,
             channel="LOG",

@@ -15,7 +15,7 @@ from contractops.application.obligations import (
     RiskActionCommand,
     initial_next_action_at,
 )
-from contractops.context import ActorContext
+from contractops.context import ActorContext, try_get_request_context
 from contractops.domain.obligation import (
     Obligation,
     ObligationStatus,
@@ -626,14 +626,18 @@ class PostgresObligationRepository:
         resource_id: UUID,
         payload: dict[str, Any],
     ) -> None:
+        request_context = try_get_request_context()
+        request_id = None if request_context is None else request_context.request_id
+        trace_id = None if request_context is None else request_context.trace_id
         connection.execute(
             text(
                 """
                 INSERT INTO outbox_events (
-                    tenant_id, event_type, aggregate_type, aggregate_id, payload
+                    tenant_id, event_type, aggregate_type, aggregate_id, payload,
+                    request_id, trace_id
                 ) VALUES (
                     :tenant_id, :event_type, :resource_type, :resource_id,
-                    CAST(:payload AS jsonb)
+                    CAST(:payload AS jsonb), :request_id, :trace_id
                 )
                 """
             ),
@@ -643,17 +647,20 @@ class PostgresObligationRepository:
                 "resource_type": resource_type,
                 "resource_id": resource_id,
                 "payload": json.dumps(payload),
+                "request_id": request_id,
+                "trace_id": trace_id,
             },
         )
         connection.execute(
             text(
                 """
                 INSERT INTO audit_events (
-                    tenant_id, actor_id, action, resource_type, resource_id,
-                    outcome, metadata
+                    tenant_id, actor_id, category, action, resource_type, resource_id,
+                    outcome, request_id, trace_id, metadata
                 ) VALUES (
-                    :tenant_id, :actor_id, :event_type, :resource_type,
-                    :resource_id, 'SUCCEEDED', CAST(:payload AS jsonb)
+                    :tenant_id, :actor_id, 'BUSINESS', :event_type, :resource_type,
+                    :resource_id, 'SUCCEEDED', :request_id, :trace_id,
+                    CAST(:payload AS jsonb)
                 )
                 """
             ),
@@ -664,6 +671,8 @@ class PostgresObligationRepository:
                 "resource_type": resource_type,
                 "resource_id": resource_id,
                 "payload": json.dumps(payload),
+                "request_id": request_id,
+                "trace_id": trace_id,
             },
         )
 

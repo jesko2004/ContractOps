@@ -2,8 +2,7 @@
 
 FastAPI service for the ContractOps contract approval and obligation-risk bounded context.
 
-The service currently includes the M0 engineering baseline, M1 multitenant contract ledger,
-M2 approval workflow, and M3 reliable event delivery:
+The service currently includes the M0 engineering baseline through M5 audit and observability:
 
 - an injectable application factory, request context, and stable error envelope;
 - liveness, readiness, and system endpoints;
@@ -21,9 +20,13 @@ M2 approval workflow, and M3 reliable event delivery:
 - per-event/channel/destination delivery idempotency, bounded retry, and dead letters;
 - metadata-only logging and signed Webhook notification adapters;
 - tenant-admin dead-letter query and manual replay operations.
+- leased obligation scheduling, unique reminder windows, risk events, and cancellation on termination;
+- append-only operation, business, and security audit events correlated by request and trace IDs;
+- OpenTelemetry traces, allowlist-only structured logs, Prometheus metrics, and alert rules;
+- auditor/admin audit search and consolidated runtime-failure query APIs.
 
-Obligation scheduling, object upload, and model calls are added in later milestones. They are not
-stubbed as successful behavior.
+Object upload and model calls are added in later milestones. They are not stubbed as successful
+behavior.
 
 ## Development
 
@@ -73,6 +76,29 @@ set CONTRACTOPS_WORKER_DATABASE_URL=postgresql://contractops_worker:contractops-
 
 The scheduler uses `FOR UPDATE SKIP LOCKED`, persistent leases, and a reminder unique key. A
 terminated contract atomically cancels active obligations so later scans cannot emit reminders.
+
+## Audit and observability
+
+Every HTTP response includes `X-Request-ID` and `X-Trace-ID`. Approval decisions, Outbox
+publication, and notification delivery retain those identifiers, allowing an auditor to reconstruct
+the complete path through `GET /v1/audit-events?request_id=...` or `?trace_id=...`. Only callers with
+`AUDITOR` or `TENANT_ADMIN` can read audit events and
+`GET /v1/admin/runtime/failures`. Audit rows are append-only at the database layer.
+
+The API exposes Prometheus metrics at `GET /metrics`; worker and scheduler processes expose their
+own registries on ports 9101 and 9102. Logs use a fixed field allowlist and never serialize request
+bodies, authorization headers, contract text, event payloads, or webhook secrets.
+
+To start Prometheus, the OpenTelemetry Collector, and Grafana locally:
+
+```bash
+set CONTRACTOPS_OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+docker compose -f deploy/contractops/docker-compose.yml --profile observability up --build
+```
+
+Prometheus is available on port 59090 and Grafana on port 53000. The checked-in alert rules cover
+API server-error rate, worker and scheduler failures, and security-denial spikes. The local
+collector intentionally uses the debug exporter; connect a durable trace backend in production.
 
 ## Authentication and contract ledger
 

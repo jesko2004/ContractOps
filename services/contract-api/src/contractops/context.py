@@ -40,6 +40,7 @@ class RequestContext:
     """Server-derived metadata that follows one request through the application."""
 
     request_id: str
+    trace_id: str = "0" * 32
 
 
 _request_context: ContextVar[RequestContext | None] = ContextVar(
@@ -65,6 +66,10 @@ def get_request_context() -> RequestContext:
     if context is None:
         raise RuntimeError("request context is not available outside an HTTP request")
     return context
+
+
+def try_get_request_context() -> RequestContext | None:
+    return _request_context.get()
 
 
 def bind_actor_context(context: ActorContext) -> Token[ActorContext | None]:

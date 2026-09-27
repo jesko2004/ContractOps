@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
@@ -18,6 +19,9 @@ from contractops.domain.obligation import (
     assess_obligation,
 )
 from contractops.errors import ContractOpsError
+from contractops.observability import SCHEDULER_OPERATIONS, start_worker_span
+
+logger = logging.getLogger("contractops.scheduler")
 
 
 @dataclass(frozen=True, slots=True)
@@ -299,14 +303,41 @@ class ObligationScheduler:
             batch_size=self._batch_size,
             lease_seconds=self._lease_seconds,
         ):
-            assessment = assess_obligation(obligation, now)
-            if self._store.apply_assessment(
-                obligation,
-                assessment,
-                worker_id=self._worker_id,
-                evaluated_at=now,
-            ):
-                processed += 1
+            with start_worker_span(
+                "obligation.assess",
+                trace_id=None,
+                attributes={
+                    "contractops.obligation.id": str(obligation.id),
+                    "contractops.contract.id": str(obligation.contract_id),
+                },
+            ) as span:
+                try:
+                    assessment = assess_obligation(obligation, now)
+                    if self._store.apply_assessment(
+                        obligation,
+                        assessment,
+                        worker_id=self._worker_id,
+                        evaluated_at=now,
+                    ):
+                        SCHEDULER_OPERATIONS.labels(outcome="processed").inc()
+                        span.set_attribute("contractops.risk.severity", assessment.severity.value)
+                        processed += 1
+                    else:
+                        SCHEDULER_OPERATIONS.labels(outcome="skipped").inc()
+                except Exception as exc:
+                    span.record_exception(exc)
+                    span.set_attribute("contractops.outcome", "failed")
+                    SCHEDULER_OPERATIONS.labels(outcome="failed").inc()
+                    logger.exception(
+                        "obligation assessment failed",
+                        extra={
+                            "event_name": "obligation.assessment.failed",
+                            "tenant_id": obligation.tenant_id,
+                            "resource_type": "obligation",
+                            "resource_id": obligation.id,
+                            "outcome": "failed",
+                        },
+                    )
         return processed
 
 

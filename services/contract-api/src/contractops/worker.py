@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import logging
 import socket
 import time
 from collections.abc import Sequence
@@ -18,6 +17,7 @@ from contractops.infrastructure.notifications import (
 )
 from contractops.infrastructure.postgres import PostgresWorkerEventStore, WorkerDatabase
 from contractops.infrastructure.redis_streams import RedisEventStream
+from contractops.observability import configure_logging, configure_tracing, start_metrics_server
 
 
 def _adapters(webhook_url: str | None, webhook_secret: str | None) -> Sequence[NotificationAdapter]:
@@ -34,7 +34,12 @@ def main() -> None:
     settings = get_settings()
     if not settings.worker_database_url:
         raise SystemExit("CONTRACTOPS_WORKER_DATABASE_URL is required")
-    logging.basicConfig(level=settings.log_level)
+    configure_logging(settings.log_level)
+    configure_tracing(
+        service_name=f"{settings.otel_service_name}-worker",
+        endpoint=settings.otel_exporter_otlp_endpoint,
+    )
+    start_metrics_server(settings.worker_metrics_port)
     worker_id = settings.event_consumer_name or socket.gethostname()
     database = WorkerDatabase(settings.worker_database_url)
     stream = RedisEventStream(
