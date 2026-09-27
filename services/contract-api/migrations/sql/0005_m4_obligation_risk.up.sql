@@ -149,6 +149,7 @@ BEGIN
     LOOP
         EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', table_name);
         EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', table_name);
+        EXECUTE format('DROP POLICY IF EXISTS tenant_isolation ON %I', table_name);
         EXECUTE format(
             'CREATE POLICY tenant_isolation ON %I USING '
             || '(tenant_id = NULLIF(current_setting(''app.tenant_id'', true), '''')::uuid) '
