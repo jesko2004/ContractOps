@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "contractops-api"
-version = "0.2.0"
+version = "0.3.0"
 description = "Contract review, approval, and obligation management service"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -14,9 +14,13 @@ dependencies = [
   "fastapi>=0.115,<1",
   "pydantic-settings>=2.6,<3",
   "psycopg[binary]>=3.2,<4",
+  "redis>=5.2,<6",
   "sqlalchemy>=2.0,<3",
   "uvicorn[standard]>=0.32,<1",
 ]
+
+[project.scripts]
+contractops-worker = "contractops.worker:main"
 
 [project.optional-dependencies]
 dev = [

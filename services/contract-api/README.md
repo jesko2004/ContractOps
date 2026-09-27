@@ -2,8 +2,8 @@
 
 FastAPI service for the ContractOps contract approval and obligation-risk bounded context.
 
-The service currently includes the M0 engineering baseline, M1 multitenant contract ledger, and
-M2 approval workflow:
+The service currently includes the M0 engineering baseline, M1 multitenant contract ledger,
+M2 approval workflow, and M3 reliable event delivery:
 
 - an injectable application factory, request context, and stable error envelope;
 - liveness, readiness, and system endpoints;
@@ -16,9 +16,14 @@ M2 approval workflow:
 - PostgreSQL repositories with transaction-scoped RLS context;
 - idempotent contract creation and immutable contract-version registration;
 - tenant-prefixed object keys and database integration tests for isolation and replay.
+- transactional Outbox publishing to a Redis Streams consumer group;
+- leased publisher and notification deliveries that recover after a worker crash;
+- per-event/channel/destination delivery idempotency, bounded retry, and dead letters;
+- metadata-only logging and signed Webhook notification adapters;
+- tenant-admin dead-letter query and manual replay operations.
 
-Workers, object upload, and model calls are added in later milestones. They are not stubbed as
-successful behavior.
+Obligation scheduling, object upload, and model calls are added in later milestones. They are not
+stubbed as successful behavior.
 
 ## Development
 
@@ -46,6 +51,18 @@ docker compose -f deploy/contractops/docker-compose.test.yml up \
 
 The migration verification performs `upgrade head` twice, rolls back to `base`, upgrades again,
 and verifies that the database is at the current head.
+
+Run the reliable event worker with its dedicated cross-tenant PostgreSQL role:
+
+```bash
+set CONTRACTOPS_WORKER_DATABASE_URL=postgresql://contractops_worker:contractops-worker-dev@localhost:55432/contractops
+.venv/Scripts/contractops-worker
+```
+
+The API runtime role remains subject to tenant RLS. The worker role has `BYPASSRLS`, but its grants
+are restricted to Outbox, notification-delivery, and dead-letter tables. Configure a Webhook only
+through trusted deployment settings. Webhook requests include a stable `Idempotency-Key` and an
+optional `X-ContractOps-Signature` HMAC-SHA256 header.
 
 ## Authentication and contract ledger
 
@@ -80,3 +97,18 @@ Mutating workflow actions except the naturally idempotent publish transition req
 `Idempotency-Key`. Step actions also require the caller's last observed `expected_version`, so only
 one concurrent decision can succeed. A contract returned for changes must receive a new immutable
 version before it becomes a draft that can be submitted again.
+
+## Reliable events and notification operations
+
+The Outbox publisher leases unpublished rows with `FOR UPDATE SKIP LOCKED`, writes their IDs to a
+Redis Stream, and marks them published only after Redis accepts the message. The consumer first
+reclaims stale pending messages, then reads new messages from its consumer group. A unique
+`(tenant_id, event_id, channel, destination)` delivery record prevents normal duplicate Stream
+delivery from sending the same notification twice. Webhook receivers should also honor the stable
+idempotency key because no distributed system can make the network gap after a successful remote
+send exactly-once.
+
+Tenant administrators can operate dead letters through:
+
+- `GET /v1/event-dead-letters` to list unresolved publication or delivery failures;
+- `POST /v1/event-dead-letters/{dead_letter_id}:replay` to reset the failed item for retry.

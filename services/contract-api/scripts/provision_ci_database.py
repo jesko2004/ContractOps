@@ -25,6 +25,20 @@ def main() -> None:
             """
         )
         connection.execute(
+            """
+            DO $$
+            BEGIN
+                IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'contractops_worker') THEN
+                    CREATE ROLE contractops_worker LOGIN PASSWORD 'contractops-worker-test'
+                        NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT BYPASSRLS;
+                ELSE
+                    ALTER ROLE contractops_worker LOGIN PASSWORD 'contractops-worker-test'
+                        NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT BYPASSRLS;
+                END IF;
+            END $$;
+            """
+        )
+        connection.execute(
             sql.SQL("GRANT CONNECT ON DATABASE {} TO contractops_app").format(
                 sql.Identifier(database_name)
             )
@@ -35,6 +49,19 @@ def main() -> None:
         )
         connection.execute(
             "GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO contractops_app"
+        )
+        connection.execute(
+            sql.SQL("GRANT CONNECT ON DATABASE {} TO contractops_worker").format(
+                sql.Identifier(database_name)
+            )
+        )
+        connection.execute("GRANT USAGE ON SCHEMA public TO contractops_worker")
+        connection.execute("GRANT SELECT, UPDATE ON outbox_events TO contractops_worker")
+        connection.execute(
+            "GRANT SELECT, INSERT, UPDATE ON notification_deliveries TO contractops_worker"
+        )
+        connection.execute(
+            "GRANT SELECT, INSERT, UPDATE ON event_dead_letters TO contractops_worker"
         )
 
 
