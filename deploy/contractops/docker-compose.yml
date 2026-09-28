@@ -22,6 +22,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
+      minio-init:
+        condition: service_completed_successfully
     ports:
       - "8080:8080"
     healthcheck:
@@ -58,6 +60,29 @@ services:
     restart: unless-stopped
     expose:
       - "9101"
+
+  ingestion-worker:
+    build:
+      context: ../../services/contract-api
+    command: ["contractops-ingestion-worker"]
+    environment:
+      CONTRACTOPS_ENVIRONMENT: development
+      CONTRACTOPS_WORKER_DATABASE_URL: postgresql://contractops_worker:contractops-worker-dev@postgres:5432/contractops
+      CONTRACTOPS_OBJECT_STORE_ENDPOINT: http://minio:9000
+      CONTRACTOPS_OBJECT_STORE_ACCESS_KEY: contractops
+      CONTRACTOPS_OBJECT_STORE_SECRET_KEY: contractops-dev-secret
+      CONTRACTOPS_OBJECT_STORE_BUCKET: contractops
+      CONTRACTOPS_DOCUMENT_MODEL_ASSISTANCE_ENABLED: "false"
+      CONTRACTOPS_OTEL_EXPORTER_OTLP_ENDPOINT: ${CONTRACTOPS_OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      CONTRACTOPS_INGESTION_WORKER_METRICS_PORT: 9103
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      minio-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    expose:
+      - "9103"
 
   obligation-scheduler:
     build:
@@ -135,6 +160,19 @@ services:
     volumes:
       - contractops-minio:/data
     restart: unless-stopped
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_started
+    entrypoint:
+      - /bin/sh
+      - -c
+      - >-
+        until mc alias set local http://minio:9000 contractops contractops-dev-secret; do sleep 1; done;
+        mc mb --ignore-existing local/contractops
+    restart: "no"
 
   prometheus:
     image: prom/prometheus:v3.5.0

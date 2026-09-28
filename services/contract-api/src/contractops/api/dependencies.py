@@ -9,6 +9,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from contractops.application.approvals import ApprovalService
 from contractops.application.audits import AuditService
 from contractops.application.contracts import ContractService
+from contractops.application.documents import DocumentService
 from contractops.application.events import EventAdminService
 from contractops.application.obligations import ObligationService
 from contractops.auth import JWTDecoder
@@ -44,6 +45,17 @@ async def authenticated_actor(
 
 def get_contract_service(request: Request) -> ContractService:
     return cast(ContractService, request.app.state.contract_service)
+
+
+def get_document_service(request: Request) -> DocumentService:
+    service = getattr(request.app.state, "document_service", None)
+    if not isinstance(service, DocumentService):
+        raise ContractOpsError(
+            code="document_service_unavailable",
+            message="document processing is not configured",
+            status_code=503,
+        )
+    return service
 
 
 def get_approval_service(request: Request) -> ApprovalService:
