@@ -37,6 +37,9 @@ dev = [
   "pytest>=8.3,<9",
   "ruff>=0.9,<1",
 ]
+performance = [
+  "locust>=2.39,<3",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/contractops"]

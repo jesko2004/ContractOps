@@ -48,6 +48,7 @@ class Settings(BaseSettings):
     ingestion_worker_metrics_port: int = 9103
     notification_webhook_url: str | None = None
     notification_webhook_secret: str | None = Field(default=None, repr=False)
+    notification_allow_private_networks: bool = False
     object_store_endpoint: str = "http://localhost:59000"
     object_store_access_key: str = "contractops"
     object_store_secret_key: str = Field(default="contractops-dev-secret", repr=False)

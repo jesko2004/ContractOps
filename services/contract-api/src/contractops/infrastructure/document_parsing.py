@@ -23,6 +23,10 @@ _DATE_PATTERN = re.compile(
     r"(?<!\d)(20\d{2})[年./-](0[1-9]|1[0-2]|[1-9])[月./-]"
     r"(0[1-9]|[12]\d|3[01]|[1-9])日?(?!\d)"
 )
+_MAX_DOCX_ENTRIES = 2_048
+_MAX_DOCX_UNCOMPRESSED_BYTES = 50 * 1024 * 1024
+_MAX_DOCX_XML_BYTES = 10 * 1024 * 1024
+_MAX_DOCX_COMPRESSION_RATIO = 200
 
 
 @dataclass(frozen=True, slots=True)
@@ -87,8 +91,25 @@ def _parse_pdf(content: bytes) -> tuple[ParsedBlock, ...]:
 def _parse_docx(content: bytes) -> tuple[ParsedBlock, ...]:
     try:
         with zipfile.ZipFile(io.BytesIO(content)) as archive:
-            root = ElementTree.fromstring(archive.read("word/document.xml"))
-    except (KeyError, zipfile.BadZipFile, ElementTree.ParseError) as error:
+            members = archive.infolist()
+            if len(members) > _MAX_DOCX_ENTRIES:
+                raise ValueError("DOCX contains too many archive entries")
+            total_size = sum(member.file_size for member in members)
+            if total_size > _MAX_DOCX_UNCOMPRESSED_BYTES:
+                raise ValueError("DOCX expands beyond the processing limit")
+            for member in members:
+                if member.flag_bits & 0x1:
+                    raise ValueError("encrypted DOCX entries are not supported")
+                if member.file_size and (
+                    member.compress_size == 0
+                    or member.file_size / member.compress_size > _MAX_DOCX_COMPRESSION_RATIO
+                ):
+                    raise ValueError("DOCX compression ratio exceeds the processing limit")
+            document = archive.getinfo("word/document.xml")
+            if document.file_size > _MAX_DOCX_XML_BYTES:
+                raise ValueError("DOCX document XML exceeds the processing limit")
+            root = ElementTree.fromstring(archive.read(document))
+    except (KeyError, ValueError, zipfile.BadZipFile, ElementTree.ParseError) as error:
         raise ContractOpsError(
             code="document_parse_failed",
             message="the DOCX could not be parsed",

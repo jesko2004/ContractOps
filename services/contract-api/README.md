@@ -2,7 +2,7 @@
 
 FastAPI service for the ContractOps contract approval and obligation-risk bounded context.
 
-The service currently includes the M0 engineering baseline through M6 document assistance:
+The service currently includes the M0 engineering baseline through M7 production readiness:
 
 - an injectable application factory, request context, and stable error envelope;
 - liveness, readiness, and system endpoints;
@@ -28,6 +28,9 @@ The service currently includes the M0 engineering baseline through M6 document a
 - leased PDF/DOCX ingestion with page/heading-aware immutable evidence chunks;
 - deterministic amount/date findings and fail-closed validation for optional model suggestions;
 - evidence-preserving version Diff responses that retain both old and new source references.
+- deterministic Worker, Redis, notification, document-bomb, SSRF, and secret-leakage gates;
+- a real FastAPI/PostgreSQL Locust profile with CI-enforced QPS, P95, and failure thresholds;
+- a generated M7 evidence artifact, incident runbook, and repeatable final demonstration script.
 
 Model assistance is disabled by default. Enabling it still cannot create a risk event or obligation:
 validated model output is stored only as a draft document finding for later human confirmation.
@@ -126,6 +129,30 @@ docker compose -f deploy/contractops/docker-compose.yml --profile observability 
 Prometheus is available on port 59090 and Grafana on port 53000. The checked-in alert rules cover
 API server-error rate, worker and scheduler failures, and security-denial spikes. The local
 collector intentionally uses the debug exporter; connect a durable trace backend in production.
+
+## M7 production-readiness evidence
+
+Install the performance extra and run the same profile used by CI:
+
+```bash
+.venv/Scripts/pip install -e ".[dev,performance]"
+locust -f performance/locustfile.py --headless --users 20 --spawn-rate 5 \
+  --run-time 30s --host http://127.0.0.1:8080 --csv artifacts/contractops
+python scripts/generate_performance_report.py artifacts/contractops_stats.csv \
+  --json-output artifacts/m7-evidence.json \
+  --markdown-output artifacts/m7-evidence.md
+```
+
+The GitHub `ContractOps API / M7 production-readiness evidence` job runs against PostgreSQL 16,
+Redis, the non-superuser RLS application role, and a real Uvicorn process. It uploads raw Locust
+CSV/HTML, API logs, machine-readable JSON, and a Markdown report. The default gate requires at
+least 10 requests/s, P95 no greater than 1,000 ms, and an error rate no greater than 1%.
+
+Webhook notifications reject credentials, redirects, and destinations resolving to private,
+loopback, link-local, or otherwise non-public addresses by default. A private destination must be
+an explicit deployment choice using `CONTRACTOPS_NOTIFICATION_ALLOW_PRIVATE_NETWORKS=true` and
+should still be protected by an egress proxy. DOCX parsing rejects encrypted, oversized,
+over-populated, and suspiciously compressed packages before XML parsing.
 
 ## Authentication and contract ledger
 

@@ -20,10 +20,21 @@ from contractops.infrastructure.redis_streams import RedisEventStream
 from contractops.observability import configure_logging, configure_tracing, start_metrics_server
 
 
-def _adapters(webhook_url: str | None, webhook_secret: str | None) -> Sequence[NotificationAdapter]:
+def _adapters(
+    webhook_url: str | None,
+    webhook_secret: str | None,
+    *,
+    allow_private_networks: bool = False,
+) -> Sequence[NotificationAdapter]:
     values: list[NotificationAdapter] = [LoggingNotificationAdapter()]
     if webhook_url:
-        values.append(WebhookNotificationAdapter(webhook_url, secret=webhook_secret))
+        values.append(
+            WebhookNotificationAdapter(
+                webhook_url,
+                secret=webhook_secret,
+                allow_private_networks=allow_private_networks,
+            )
+        )
     return tuple(values)
 
 
@@ -58,7 +69,11 @@ def main() -> None:
     consumer = NotificationConsumer(
         store,
         stream,
-        _adapters(settings.notification_webhook_url, settings.notification_webhook_secret),
+        _adapters(
+            settings.notification_webhook_url,
+            settings.notification_webhook_secret,
+            allow_private_networks=settings.notification_allow_private_networks,
+        ),
         consumer_name=worker_id,
         batch_size=settings.event_batch_size,
         lease_seconds=settings.event_lease_seconds,

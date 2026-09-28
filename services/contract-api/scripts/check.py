@@ -25,7 +25,7 @@ def main() -> None:
     )
     options = parser.parse_args()
 
-    run("ruff", "check", "src", "tests", "scripts", "migrations")
+    run("ruff", "check", "src", "tests", "scripts", "performance", "migrations")
     run("mypy", "src")
     run("pytest")
     if options.with_migrations:
