@@ -16,7 +16,7 @@ class Settings(BaseSettings):
 
     app_name: str = "ContractOps API"
     environment: str = "development"
-    version: str = "0.3.0"
+    version: str = "0.5.0"
     api_prefix: str = "/v1"
     log_level: str = "INFO"
 
@@ -45,12 +45,21 @@ class Settings(BaseSettings):
     otel_exporter_otlp_endpoint: str | None = None
     worker_metrics_port: int = 9101
     scheduler_metrics_port: int = 9102
+    ingestion_worker_metrics_port: int = 9103
     notification_webhook_url: str | None = None
     notification_webhook_secret: str | None = Field(default=None, repr=False)
     object_store_endpoint: str = "http://localhost:59000"
     object_store_access_key: str = "contractops"
     object_store_secret_key: str = Field(default="contractops-dev-secret", repr=False)
     object_store_bucket: str = "contractops"
+    object_store_secure: bool = False
+    upload_url_expiry_seconds: int = Field(default=900, ge=60, le=86_400)
+    document_max_size_bytes: int = Field(default=104_857_600, ge=1, le=5_000_000_000)
+    ingestion_batch_size: int = Field(default=5, ge=1, le=100)
+    ingestion_lease_seconds: int = Field(default=120, ge=10, le=3600)
+    ingestion_poll_interval_seconds: float = Field(default=1, ge=0.1, le=60)
+    document_model_assistance_enabled: bool = False
+    document_model_name: str = "qwen-plus"
     model_base_url: str = "http://localhost:4000/v1"
 
 

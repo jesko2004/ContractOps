@@ -2,7 +2,7 @@
 
 FastAPI service for the ContractOps contract approval and obligation-risk bounded context.
 
-The service currently includes the M0 engineering baseline through M5 audit and observability:
+The service currently includes the M0 engineering baseline through M6 document assistance:
 
 - an injectable application factory, request context, and stable error envelope;
 - liveness, readiness, and system endpoints;
@@ -24,9 +24,13 @@ The service currently includes the M0 engineering baseline through M5 audit and 
 - append-only operation, business, and security audit events correlated by request and trace IDs;
 - OpenTelemetry traces, allowlist-only structured logs, Prometheus metrics, and alert rules;
 - auditor/admin audit search and consolidated runtime-failure query APIs.
+- time-limited MinIO upload tickets with size and SHA-256 verification before parsing;
+- leased PDF/DOCX ingestion with page/heading-aware immutable evidence chunks;
+- deterministic amount/date findings and fail-closed validation for optional model suggestions;
+- evidence-preserving version Diff responses that retain both old and new source references.
 
-Object upload and model calls are added in later milestones. They are not stubbed as successful
-behavior.
+Model assistance is disabled by default. Enabling it still cannot create a risk event or obligation:
+validated model output is stored only as a draft document finding for later human confirmation.
 
 ## Development
 
@@ -76,6 +80,29 @@ set CONTRACTOPS_WORKER_DATABASE_URL=postgresql://contractops_worker:contractops-
 
 The scheduler uses `FOR UPDATE SKIP LOCKED`, persistent leases, and a reminder unique key. A
 terminated contract atomically cancels active obligations so later scans cannot emit reminders.
+
+## Document upload and evidence
+
+The document path is intentionally two-phase:
+
+1. `POST /v1/contracts/{contract_id}/uploads` registers an immutable version and returns a
+   15-minute presigned upload URL.
+2. The client uploads directly to MinIO, then calls
+   `POST /v1/contract-versions/{version_id}:complete-upload`.
+3. Completion verifies object metadata and enqueues a leased ingestion job. The worker downloads
+   the object, verifies its SHA-256 digest, parses PDF pages or DOCX heading paths, and atomically
+   publishes evidence chunks and rule findings.
+
+Read evidence with `GET /v1/contract-versions/{version_id}/chunks` and
+`GET /v1/contract-versions/{version_id}/findings`. Compare two immutable versions with
+`GET /v1/contracts/{contract_id}/version-diff?from_version_id=...&to_version_id=...`.
+
+Run the ingestion worker with its restricted cross-tenant role:
+
+```bash
+set CONTRACTOPS_WORKER_DATABASE_URL=postgresql://contractops_worker:contractops-worker-dev@localhost:55432/contractops
+.venv/Scripts/contractops-ingestion-worker
+```
 
 ## Audit and observability
 

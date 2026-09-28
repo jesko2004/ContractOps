@@ -35,11 +35,22 @@ def test_alembic_baseline_files_are_present() -> None:
     assert (
         SERVICE_ROOT / "migrations" / "sql" / "0006_m5_audit_observability.down.sql"
     ).is_file()
+    assert (
+        SERVICE_ROOT / "migrations" / "versions" / "20260928_0007_m6_document_assistance.py"
+    ).is_file()
+    assert (SERVICE_ROOT / "migrations" / "sql" / "0007_m6_document_assistance.up.sql").is_file()
+    assert (
+        SERVICE_ROOT / "migrations" / "sql" / "0007_m6_document_assistance.down.sql"
+    ).is_file()
     provisioner = (SERVICE_ROOT / "scripts" / "provision_ci_database.py").read_text(
         encoding="utf-8"
     )
     for table in (
         "contracts",
+        "contract_versions",
+        "ingestion_jobs",
+        "contract_chunks",
+        "document_findings",
         "obligations",
         "risk_events",
         "obligation_reminders",

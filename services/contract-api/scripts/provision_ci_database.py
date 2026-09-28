@@ -64,6 +64,14 @@ def main() -> None:
             "GRANT SELECT, INSERT, UPDATE ON event_dead_letters TO contractops_worker"
         )
         connection.execute("GRANT SELECT ON contracts TO contractops_worker")
+        connection.execute("GRANT SELECT, UPDATE ON contract_versions TO contractops_worker")
+        connection.execute("GRANT SELECT, UPDATE ON ingestion_jobs TO contractops_worker")
+        connection.execute(
+            "GRANT SELECT, INSERT, DELETE ON contract_chunks TO contractops_worker"
+        )
+        connection.execute(
+            "GRANT SELECT, INSERT, DELETE ON document_findings TO contractops_worker"
+        )
         connection.execute("GRANT SELECT, UPDATE ON obligations TO contractops_worker")
         connection.execute(
             "GRANT SELECT, INSERT, UPDATE ON risk_events TO contractops_worker"
