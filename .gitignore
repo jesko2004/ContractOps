@@ -23,6 +23,7 @@ CLAUDE.local.md
 __pycache__/
 *.py[cod]
 .venv/
+.codex_docx_tool/
 
 # Playwright
 /test-results/

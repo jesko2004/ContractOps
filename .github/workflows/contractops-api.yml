@@ -82,3 +82,117 @@ jobs:
       - name: Validate test Compose
         working-directory: deploy/contractops
         run: docker compose -f docker-compose.test.yml config --quiet
+
+  performance:
+    name: M7 production-readiness evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: contractops_perf
+          POSTGRES_USER: contractops_admin
+          POSTGRES_PASSWORD: contractops-admin-perf
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U contractops_admin -d contractops_perf"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      CONTRACTOPS_ENVIRONMENT: performance
+      CONTRACTOPS_MIGRATION_DATABASE_URL: postgresql://contractops_admin:contractops-admin-perf@localhost:5432/contractops_perf
+      CONTRACTOPS_DATABASE_URL: postgresql://contractops_app:contractops-app-test@localhost:5432/contractops_perf
+      CONTRACTOPS_INTEGRATION_DATABASE_URL: postgresql://contractops_app:contractops-app-test@localhost:5432/contractops_perf
+      CONTRACTOPS_INTEGRATION_ADMIN_DATABASE_URL: postgresql://contractops_admin:contractops-admin-perf@localhost:5432/contractops_perf
+      CONTRACTOPS_INTEGRATION_WORKER_DATABASE_URL: postgresql://contractops_worker:contractops-worker-test@localhost:5432/contractops_perf
+      CONTRACTOPS_INTEGRATION_REDIS_URL: redis://localhost:6379/14
+      CONTRACTOPS_REDIS_URL: redis://localhost:6379/15
+      CONTRACTOPS_JWT_SECRET: contractops-ci-performance-secret
+      CONTRACTOPS_JWT_ISSUER: contractops
+      CONTRACTOPS_JWT_AUDIENCE: contractops-api
+    defaults:
+      run:
+        working-directory: services/contract-api
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: services/contract-api/pyproject.toml
+
+      - name: Install performance toolchain
+        run: python -m pip install -e ".[dev,performance]"
+
+      - name: Prepare performance database
+        run: |
+          python scripts/verify_migrations.py
+          python scripts/provision_ci_database.py
+          python scripts/seed_performance.py
+
+      - name: Run deterministic M7 fault and correctness gates
+        run: >-
+          python -m pytest
+          tests/test_m7_resilience_security.py
+          tests/test_postgres_approval_workflow.py
+          tests/test_postgres_reliable_events.py
+          tests/test_postgres_obligation_scheduler.py
+
+      - name: Start ContractOps API
+        run: |
+          python -m uvicorn contractops.main:app --host 127.0.0.1 --port 8080 > contractops-api.log 2>&1 &
+          python - <<'PY'
+          import time
+          import urllib.request
+
+          for _ in range(60):
+              try:
+                  with urllib.request.urlopen("http://127.0.0.1:8080/health/live", timeout=1):
+                      break
+              except Exception:
+                  time.sleep(0.5)
+          else:
+              raise SystemExit("ContractOps API did not become ready")
+          PY
+
+      - name: Run Locust baseline and enforce thresholds
+        run: |
+          mkdir -p artifacts
+          locust -f performance/locustfile.py --headless --users 20 --spawn-rate 5 \
+            --run-time 30s --host http://127.0.0.1:8080 --only-summary \
+            --csv artifacts/contractops --html artifacts/contractops.html
+          python scripts/generate_performance_report.py artifacts/contractops_stats.csv \
+            --json-output artifacts/m7-evidence.json \
+            --markdown-output artifacts/m7-evidence.md \
+            --users 20 --duration-seconds 30 --min-qps 10 --max-p95-ms 1000 \
+            --max-failure-rate 0.01
+
+      - name: Add evidence to workflow summary
+        if: always()
+        run: |
+          if [ -f artifacts/m7-evidence.md ]; then
+            cat artifacts/m7-evidence.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload M7 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: contractops-m7-evidence
+          path: |
+            services/contract-api/artifacts/
+            services/contract-api/contractops-api.log
+          if-no-files-found: warn
