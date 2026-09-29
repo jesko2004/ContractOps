@@ -7,6 +7,7 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 from contractops.config import get_settings
+from contractops.preflight import validate_runtime_role
 
 config = context.config
 
@@ -24,6 +25,7 @@ def normalize_database_url(url: str) -> str:
 
 def migration_database_url() -> str:
     settings = get_settings()
+    validate_runtime_role(settings, "migration")
     value = (
         os.getenv("CONTRACTOPS_MIGRATION_DATABASE_URL")
         or settings.migration_database_url

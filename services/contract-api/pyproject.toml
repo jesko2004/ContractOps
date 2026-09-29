@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "contractops-api"
-version = "0.5.0"
+version = "0.6.0"
 description = "Contract review, approval, and obligation management service"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -27,6 +27,7 @@ dependencies = [
 
 [project.scripts]
 contractops-ingestion-worker = "contractops.ingestion_worker:main"
+contractops-preflight = "contractops.preflight:main"
 contractops-worker = "contractops.worker:main"
 contractops-scheduler = "contractops.scheduler:main"
 
