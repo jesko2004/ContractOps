@@ -83,6 +83,45 @@ jobs:
         working-directory: deploy/contractops
         run: docker compose -f docker-compose.test.yml config --quiet
 
+      - name: Validate production preflight commands
+        env:
+          CONTRACTOPS_ENVIRONMENT: production
+          CONTRACTOPS_ALLOWED_HOSTS: api.contractops.example
+          CONTRACTOPS_DATABASE_URL: postgresql://app:runtime-password@db.example/contractops?sslmode=verify-full
+          CONTRACTOPS_MIGRATION_DATABASE_URL: postgresql://admin:migration-password@db.example/contractops?sslmode=verify-full
+          CONTRACTOPS_WORKER_DATABASE_URL: postgresql://worker:worker-password@db.example/contractops?sslmode=verify-full
+          CONTRACTOPS_REDIS_URL: rediss://redis.example/0
+          CONTRACTOPS_JWT_SECRET: ci-production-jwt-secret-with-at-least-32-characters
+          CONTRACTOPS_OTEL_EXPORTER_OTLP_ENDPOINT: https://otel.example/v1/traces
+          CONTRACTOPS_OBJECT_STORE_ENDPOINT: https://objects.example
+          CONTRACTOPS_OBJECT_STORE_ACCESS_KEY: ci-access-key
+          CONTRACTOPS_OBJECT_STORE_SECRET_KEY: ci-object-secret-with-32-characters
+          CONTRACTOPS_OBJECT_STORE_BUCKET: contractops-production
+          CONTRACTOPS_OBJECT_STORE_SECURE: "true"
+        run: |
+          CONTRACTOPS_RUNTIME_ROLE=api contractops-preflight --role api
+          CONTRACTOPS_RUNTIME_ROLE=event-worker contractops-preflight --role event-worker
+          CONTRACTOPS_RUNTIME_ROLE=ingestion-worker contractops-preflight --role ingestion-worker
+          CONTRACTOPS_RUNTIME_ROLE=scheduler contractops-preflight --role scheduler
+          CONTRACTOPS_RUNTIME_ROLE=migration contractops-preflight --role migration
+
+      - name: Validate production Compose
+        working-directory: deploy/contractops
+        env:
+          CONTRACTOPS_IMAGE: registry.example/contractops-api@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          CONTRACTOPS_ALLOWED_HOSTS: api.contractops.example
+          CONTRACTOPS_DATABASE_URL: postgresql://app:runtime-password@db.example/contractops?sslmode=verify-full
+          CONTRACTOPS_MIGRATION_DATABASE_URL: postgresql://admin:migration-password@db.example/contractops?sslmode=verify-full
+          CONTRACTOPS_WORKER_DATABASE_URL: postgresql://worker:worker-password@db.example/contractops?sslmode=verify-full
+          CONTRACTOPS_REDIS_URL: rediss://redis.example/0
+          CONTRACTOPS_JWT_SECRET: ci-production-jwt-secret-with-at-least-32-characters
+          CONTRACTOPS_OTEL_EXPORTER_OTLP_ENDPOINT: https://otel.example/v1/traces
+          CONTRACTOPS_OBJECT_STORE_ENDPOINT: https://objects.example
+          CONTRACTOPS_OBJECT_STORE_ACCESS_KEY: ci-access-key
+          CONTRACTOPS_OBJECT_STORE_SECRET_KEY: ci-object-secret-with-32-characters
+          CONTRACTOPS_OBJECT_STORE_BUCKET: contractops-production
+        run: docker compose -f docker-compose.prod.yml config --quiet
+
   performance:
     name: M7 production-readiness evidence
     runs-on: ubuntu-latest

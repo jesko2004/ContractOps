@@ -62,6 +62,26 @@ docker compose -f deploy/contractops/docker-compose.test.yml up \
 The migration verification performs `upgrade head` twice, rolls back to `base`, upgrades again,
 and verifies that the database is at the current head.
 
+## Production deployment
+
+Production settings fail closed before any runtime starts: development/short secrets, localhost or
+development database credentials, plaintext PostgreSQL/Redis/object storage/OTLP endpoints, and
+unsigned Webhooks are rejected. Validate each process role with the packaged preflight command:
+
+```bash
+contractops-preflight --role api --check-dependencies
+contractops-preflight --role event-worker --check-dependencies
+contractops-preflight --role ingestion-worker --check-dependencies
+contractops-preflight --role scheduler --check-dependencies
+contractops-preflight --role migration --check-dependencies
+```
+
+The hardened application-only deployment is
+`deploy/contractops/docker-compose.prod.yml`; it requires an immutable image reference and external
+TLS PostgreSQL, Redis, object storage, and OTLP services. See
+`architecture/CONTRACTOPS-PRODUCTION.md` for build, preflight, rollout, backup, recovery, capacity,
+and rollback requirements. The development Compose file is not a production deployment template.
+
 Run the reliable event worker with its dedicated cross-tenant PostgreSQL role:
 
 ```bash

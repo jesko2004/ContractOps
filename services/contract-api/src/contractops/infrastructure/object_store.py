@@ -31,6 +31,21 @@ class MinioObjectStore(ObjectStore):
         )
         self._bucket = bucket
 
+    def check(self) -> None:
+        try:
+            if not self._client.bucket_exists(self._bucket):
+                raise ContractOpsError(
+                    code="object_store_bucket_missing",
+                    message="the configured contract object bucket does not exist",
+                    status_code=503,
+                )
+        except S3Error as error:
+            raise ContractOpsError(
+                code="object_store_unavailable",
+                message="contract object storage is unavailable",
+                status_code=503,
+            ) from error
+
     def presign_put(self, object_key: str, *, expires: timedelta) -> str:
         try:
             return self._client.presigned_put_object(self._bucket, object_key, expires=expires)

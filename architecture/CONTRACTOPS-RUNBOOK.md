@@ -10,11 +10,13 @@ Scheduler 和通知适配器。所有处置必须保留 `request_id`、`trace_id
 
 1. `python scripts/check.py --with-migrations` 全部通过。
 2. GitHub `M7 production-readiness evidence` 通过：QPS ≥ 10、P95 ≤ 1,000 ms、失败率 ≤ 1%。
-3. `docker compose -f deploy/contractops/docker-compose.yml config --quiet` 通过。
-4. 生产环境已替换 JWT、数据库、对象存储、Grafana 和 Webhook 密钥。
-5. Webhook 使用公网 HTTPS 域名；如确需专网地址，只在受控网络显式开启
+3. `docker compose -f deploy/contractops/docker-compose.prod.yml config --quiet` 通过。
+4. API、事件 Worker、文档 Worker、Scheduler 和 migration 五个角色的
+   `contractops-preflight --check-dependencies` 全部通过。
+5. 生产环境已替换 JWT、数据库、对象存储、Grafana 和 Webhook 密钥。
+6. Webhook 使用公网 HTTPS 域名；如确需专网地址，只在受控网络显式开启
    `CONTRACTOPS_NOTIFICATION_ALLOW_PRIVATE_NETWORKS=true` 并配置出口白名单。
-6. 数据库备份、迁移回滚窗口、值班人和业务回退负责人已经确认。
+7. 数据库备份、迁移回滚窗口、值班人和业务回退负责人已经确认。
 
 ## 3. 健康检查和观测入口
 
