@@ -7,7 +7,14 @@ ContractOps 是一个面向企业法务、财务、采购和业务团队的后�
 项目由原 EduMind 平台方案收缩而来。OpenMAIC 代码仍保留在仓库中，后续只作为
 可选演示客户端；新的核心代码位于 `services/contract-api`。
 
-## 当前骨架
+## 当前状态
+
+八周实现计划的 M0-M7 已全部落地。当前分支包含合同台账、审批、可靠事件、履约与风险、
+审计与可观测、文档辅助和生产就绪验证的完整后端闭环。2026-09-28，提交
+`cce4d5ea` 的 GitHub Actions `M7 production-readiness evidence` 任务运行成功；详细压测数字
+仍需从该运行的 `contractops-m7-evidence` 产物回填到验收报告。
+
+## 代码结构
 
 ```text
 ContractOps/
@@ -31,7 +38,8 @@ ContractOps/
 - 合同生命周期状态机及非法迁移测试，同时保留早期审查状态机作为历史兼容代码；
 - 由 Alembic 管理的 PostgreSQL/pgvector 初始数据模型、升级与回滚脚本；
 - 带一次性 `migrate` 服务的开发 Compose，以及隔离的测试 Compose；
-- ContractOps API 专用 CI，执行 Ruff、mypy、pytest、空库迁移往返和 Compose 配置检查；
+- ContractOps API 专用 CI，执行 Ruff、mypy、pytest、空库迁移往返、Compose 配置检查和
+  M7 实服务压测；
 - HS256 JWT 租户上下文、角色与部门数据范围校验，以及稳定的认证/授权错误码；
 - Contract、ContractVersion PostgreSQL Repository 与事务级 RLS 上下文；
 - 合同创建、查询和不可变版本登记 API，支持租户级幂等键和对象键隔离；
@@ -40,13 +48,16 @@ ContractOps/
 - Worker 租约、待处理消息接管、通知幂等、指数退避、死信与人工重放；
 - 不记录合同正文的日志通知，以及带稳定幂等键和可选 HMAC 签名的 Webhook 通知；
 - 独立 `contractops_worker` 跨租户数据库角色和受限事件表权限；
+- 履约义务、到期调度、提醒去重、风险生成/确认/延期/关闭，以及合同终止后的任务取消；
+- 追加式分类审计、请求/链路关联、Prometheus 指标、OpenTelemetry 和运行失败查询；
+- MinIO 预签名直传、上传完成校验、PDF/DOCX 解析、不可变证据块、规则/模型提示和版本 Diff；
+- Worker/Redis/通知故障恢复、恶意 DOCX、SSRF、敏感信息泄漏和租户越权安全门禁；
+- Locust 性能剖面、M7 证据生成器、运行手册和最终演示脚本；
 - 产品边界、API 草案、里程碑、验收标准和持续更新记录。
 
-当前已实现：审批策略版本与发布、受控条件匹配、策略快照、顺序审批、高金额财务加签、
-个人待办、领取/审批/驳回/退回修改/转交、乐观并发控制，以及审批事件的可靠异步通知。
-
-尚未实现：履约调度、风险升级、对象存储直传和审批人目录校验。文档解析和模型调用
-安排在核心业务闭环完成之后。项目不会把规划能力表述为已完成。
+尚未收口的生产化事项包括：从成功的 M7 CI 产物回填精确性能数字、接入真实企业审批人
+目录、为 OpenTelemetry 配置持久化 Trace 后端，以及在目标规格预发布环境执行长时间稳态
+和峰值测试。并行会签和外部 ERP/OA 集成仍属于后续增强，不在首版八周交付范围内。
 
 ## 本地启动
 
@@ -100,6 +111,9 @@ MinIO Console `59001`。默认密码只用于本地开发。
 
 - [项目边界](architecture/CONTRACTOPS-SCOPE.md)
 - [实施计划与基础架构](architecture/CONTRACTOPS-IMPLEMENTATION-PLAN.md)
+- [M7 验收报告](architecture/M7-ACCEPTANCE-REPORT.md)
+- [最终演示脚本](architecture/CONTRACTOPS-DEMO.md)
+- [运行与故障处置手册](architecture/CONTRACTOPS-RUNBOOK.md)
 - [原 EduMind 方案迁移说明](README-EDUMIND.md)
 
 ## 上游说明

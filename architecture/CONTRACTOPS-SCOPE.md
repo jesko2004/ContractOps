@@ -75,26 +75,26 @@ ContractOps 不以通用 PDF 检查、版面分析或文档问答为产品目标
 
 ## 当前已经建立
 
-- `services/contract-api` FastAPI 应用骨架；
-- `/health/live`、`/health/ready`、`/v1/system/info`；
-- 请求 ID 生成与回传；
-- 初版审查状态机及单元测试；
-- PostgreSQL/pgvector 初始迁移；
-- PostgreSQL、Redis、MinIO、API 的独立本地 Compose；
-- JWT 租户上下文、RBAC、部门/本人/租户三级数据范围；
-- Contract、ContractVersion PostgreSQL Repository 和事务级 RLS 上下文；
-- 合同创建、查询、不可变版本登记及租户级幂等；
-- 多租户隔离、重复请求和版本不可覆盖集成测试；
-- 项目范围、实施计划和验收边界。
+- `services/contract-api` FastAPI 服务、稳定错误信封、健康检查和请求/链路上下文；
+- PostgreSQL/pgvector 迁移、RLS、JWT/RBAC 与本人/部门/租户三级数据范围；
+- Contract、ContractVersion、审批策略/实例/步骤、义务、风险和审计的持久化模型；
+- 合同创建/查询、不可变版本、策略匹配、顺序审批、个人待办和并发决定保护；
+- Transactional Outbox、Redis Streams Worker、通知幂等、重试、死信与人工重放；
+- 履约调度、数据库租约、提醒去重、逾期风险升级和合同终止后的任务取消；
+- 追加式分类审计、Prometheus 指标、OpenTelemetry、结构化安全日志与告警规则；
+- MinIO 预签名直传、PDF/DOCX 解析、证据块、规则/可选模型提示和版本 Diff；
+- 多租户、迁移、故障恢复、恶意文档、SSRF、敏感信息和 Locust 性能自动化门禁；
+- 运行手册、最终演示脚本、M7 证据产物和八周验收边界。
 
-## 尚未实现
+## 尚未收口与后续增强
 
-- ApprovalPolicy、ApprovalInstance、ApprovalStep 和待办 API；
-- Outbox Publisher、Redis Streams Worker 和死信管理；
-- Obligation、RiskEvent、数据库租约和提醒去重；
-- 文件上传、PDF/DOCX 解析和条款证据；
-- 模型辅助提取和风险提示；
-- 对象存储直传、OpenTelemetry、指标看板、完整端到端测试与压测。
+- 将成功的 M7 CI 产物中的精确 QPS、P50/P95/P99、失败率和数据库成本回填验收报告；
+- 接入真实企业用户/组织目录，校验审批人、转交目标和离职替补关系；
+- 在目标规格预发布环境执行长时间稳态、峰值和容量测试，并接入持久化 Trace 后端；
+- 并行会签、复杂条件编排，以及 ERP/OA/钉钉/飞书等外部系统适配器。
+
+这些事项不改变首版后端闭环已经完成的事实；其中并行会签和外部系统集成属于明确的
+后续增强，不计入 M0-M7 验收范围。
 
 ## 明确不做
 
