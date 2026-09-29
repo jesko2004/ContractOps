@@ -3,8 +3,19 @@
 ## 状态
 
 M7 实现已提供自动化证据链。最终实测数字由 GitHub Actions 的
-`M7 production-readiness evidence` 任务生成，首个成功运行后从
+`M7 production-readiness evidence` 任务生成，并从
 `contractops-m7-evidence/m7-evidence.md` 原样回填到本报告。
+
+提交 `cce4d5eae9b2eb06cd68903487388475fa5b2d2d` 的工作流运行
+[`36437399533`](https://github.com/jesko2004/ContractOps/actions/runs/36437399533) 已于
+2026-09-28 成功完成，证明默认 QPS、P95 和失败率门禁已经通过。当前环境可以读取运行
+结论；精确数值尚未从需要认证下载的工作流产物回填，因此下表继续保留为待回填状态，
+避免把阈值误写成实测值。
+
+该运行的两个任务均成功：`Lint, types, tests, and migrations`（job `108978757291`）完成
+空库迁移、非超级用户运行角色、静态检查、单元/集成测试和 Compose 校验；
+`M7 production-readiness evidence`（job `108978757697`）完成性能数据库准备、确定性故障
+门禁、真实 Uvicorn 服务启动、Locust 阈值校验、摘要生成和证据上传。
 
 本地环境未安装 Docker，因此不把本机的内存测试速度伪装成服务性能数据。CI 使用真实
 FastAPI/Uvicorn 进程、PostgreSQL 16、RLS 应用角色和 Redis，产出 Locust CSV/HTML、
