@@ -29,6 +29,7 @@ from contractops.domain.obligation import (
 )
 from contractops.errors import ContractOpsError
 from contractops.infrastructure.postgres.database import Database, WorkerDatabase
+from contractops.infrastructure.postgres.idempotency import expire_key
 
 
 def _obligation_from_row(row: Mapping[str, Any] | RowMapping) -> Obligation:
@@ -566,6 +567,7 @@ class PostgresObligationRepository:
         request_hash: str,
     ) -> RowMapping | None:
         self._lock(connection, actor, operation, idempotency_key)
+        expire_key(connection, operation, idempotency_key)
         row = connection.execute(
             text(
                 """

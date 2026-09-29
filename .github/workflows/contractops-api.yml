@@ -68,7 +68,12 @@ jobs:
           cache-dependency-path: services/contract-api/pyproject.toml
 
       - name: Install ContractOps API
-        run: python -m pip install -e ".[dev]"
+        run: |
+          python -m pip install uv==0.11.29
+          uv lock --check
+          uv sync --frozen --extra dev --group build --no-install-project
+          uv sync --frozen --extra dev --group build --no-build-isolation --no-editable
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
 
       - name: Empty database migration verification
         run: python scripts/verify_migrations.py
@@ -174,7 +179,12 @@ jobs:
           cache-dependency-path: services/contract-api/pyproject.toml
 
       - name: Install performance toolchain
-        run: python -m pip install -e ".[dev,performance]"
+        run: |
+          python -m pip install uv==0.11.29
+          uv lock --check
+          uv sync --frozen --extra dev --extra performance --group build --no-install-project
+          uv sync --frozen --extra dev --extra performance --group build --no-build-isolation --no-editable
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
 
       - name: Prepare performance database
         run: |
@@ -235,3 +245,19 @@ jobs:
             services/contract-api/artifacts/
             services/contract-api/contractops-api.log
           if-no-files-found: warn
+
+  container:
+    name: ContractOps locked container builds
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build and smoke-test runtime image
+        run: |
+          docker build --target runtime -t contractops-runtime:audit services/contract-api
+          docker run --rm contractops-runtime:audit contractops-preflight --help
+      - name: Build and exercise test image
+        run: |
+          docker build --target test -t contractops-test:audit services/contract-api
+          docker run --rm contractops-test:audit python -m pytest \
+            tests/test_lease_heartbeat.py tests/test_task_pagination.py tests/test_audit_observability.py

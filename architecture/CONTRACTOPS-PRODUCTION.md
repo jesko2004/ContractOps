@@ -33,6 +33,10 @@ Worker 获得 Worker 数据库、Redis 和通知凭据；文档 Worker 获得 Wo
 
 ## 3. 构建不可变镜像
 
+Dockerfile 固定 Python 和 uv 官方镜像的 SHA-256 摘要；运行、测试与构建依赖均来自
+`services/contract-api/uv.lock`。镜像使用 `uv sync --frozen` 和禁用构建隔离的第二次安装，
+避免构建后端另行解析未锁定依赖。更新依赖时提交 pyproject 与锁文件并重新通过 CI。
+
 从已经通过 CI 的提交构建并推送镜像，部署时使用 digest，不使用 `latest`：
 
 ```bash
@@ -56,6 +60,12 @@ install -m 600 deploy/contractops/.env.production.example /etc/contractops/contr
 调度/文档处理表权限的跨租户 Worker 角色。三条连接串都必须启用 `sslmode=verify-full`
 或组织批准的 TLS 校验模式。
 
+由数据库管理员预先创建两个独立 LOGIN 角色（密码经密钥系统配置）：API 角色必须
+`NOSUPERUSER NOCREATEROLE NOBYPASSRLS`，Worker 角色必须
+`NOSUPERUSER NOCREATEROLE BYPASSRLS`。迁移角色拥有 public schema 的 CREATE 权限及业务表；
+首次初始化前由管理员安装 `pgcrypto` 和 `vector` 扩展。不要把迁移凭据交给 API。
+迁移完成后按下面的命令授予实际角色权限；自定义角色名也受支持。
+
 对象存储 Bucket 必须预先创建，并开启版本控制、服务端加密、生命周期规则和拒绝公开访问。
 Redis 只承载可重放的 Stream，不是业务事实源；仍应开启认证、TLS、持久化和内存告警。
 
@@ -73,6 +83,15 @@ docker compose --env-file "$CONTRACTOPS_ENV_FILE" \
   -f deploy/contractops/docker-compose.prod.yml run --rm preflight-migration
 
 docker compose --env-file "$CONTRACTOPS_ENV_FILE" \
+  -f deploy/contractops/docker-compose.prod.yml run --rm migrate
+
+# 替换为已由管理员创建的实际角色名。首次部署及升级后均执行。
+docker compose --env-file "$CONTRACTOPS_ENV_FILE" \
+  -f deploy/contractops/docker-compose.prod.yml run --rm migrate \
+  python scripts/provision_production_database.py \
+  --app-role contractops_app --worker-role contractops_worker
+
+docker compose --env-file "$CONTRACTOPS_ENV_FILE" \
   -f deploy/contractops/docker-compose.prod.yml run --rm preflight-api
 
 docker compose --env-file "$CONTRACTOPS_ENV_FILE" \
@@ -85,12 +104,22 @@ docker compose --env-file "$CONTRACTOPS_ENV_FILE" \
   -f deploy/contractops/docker-compose.prod.yml run --rm preflight-scheduler
 
 docker compose --env-file "$CONTRACTOPS_ENV_FILE" \
-  -f deploy/contractops/docker-compose.prod.yml up -d migrate
-
-docker compose --env-file "$CONTRACTOPS_ENV_FILE" \
   -f deploy/contractops/docker-compose.prod.yml up -d \
   contract-api contract-worker ingestion-worker obligation-scheduler
 ```
+
+运行角色的依赖预检会验证 schema 版本、逐表权限、强制 RLS 和数据库角色属性。
+迁移预检只验证 DDL 所需权限，允许首次初始化空库；其他预检等待迁移完成。
+OTLP 可填写 collector 基础地址或完整 `/v1/traces` 地址，前缀路径会被保留。
+
+文档 Worker 每隔租约时长的三分之一续期。写回时同时检查 Worker 身份、领取次数和
+有效租约，过期或被接管的尝试不能写入成功、失败、证据或审计结果。
+
+幂等键保留 24 小时：有效期内继续重放，过期后的同键请求按新请求处理，业务唯一约束
+仍然生效。Scheduler 每分钟分批清理最多 1000 条过期记录；清理失败记日志并在下一周期重试。
+`GET /v1/approval-tasks` 默认每页 50 条，`limit` 范围 1–200，返回仍是数组；有下一页时
+响应头提供 `X-Next-Cursor`，下一次请求将它原样传入 `cursor`。没有该响应头表示已到末页。
+排序为 `(created_at, id)`，游标绑定租户和用户，每页重新执行当前权限过滤。
 
 清单默认只把 API 绑定到 `127.0.0.1:8080`，必须通过受信任的 TLS 反向代理或入口网关
 暴露。Worker 指标同样默认只绑定到主机回环地址的 9101–9103 端口，供本机监控代理抓取。

@@ -45,6 +45,9 @@ performance = [
 [tool.hatch.build.targets.wheel]
 packages = ["src/contractops"]
 
+[dependency-groups]
+build = ["hatchling>=1.27,<2"]
+
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]

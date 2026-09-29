@@ -99,24 +99,36 @@ services:
     environment: *api-environment
     command: ["contractops-preflight", "--role", "api", "--check-dependencies"]
     restart: "no"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
 
   preflight-event-worker:
     <<: *runtime
     environment: *event-worker-environment
     command: ["contractops-preflight", "--role", "event-worker", "--check-dependencies"]
     restart: "no"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
 
   preflight-ingestion-worker:
     <<: *runtime
     environment: *ingestion-worker-environment
     command: ["contractops-preflight", "--role", "ingestion-worker", "--check-dependencies"]
     restart: "no"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
 
   preflight-scheduler:
     <<: *runtime
     environment: *scheduler-environment
     command: ["contractops-preflight", "--role", "scheduler", "--check-dependencies"]
     restart: "no"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
 
   contract-api:
     <<: *runtime

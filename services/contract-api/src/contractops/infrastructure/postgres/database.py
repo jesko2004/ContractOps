@@ -7,6 +7,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Connection, Engine
 
 from contractops.context import ActorContext
+from contractops.infrastructure.postgres.permissions import check_database_permissions
 
 
 def normalize_database_url(url: str) -> str:
@@ -42,6 +43,10 @@ class Database:
     def check(self) -> None:
         with self._engine.connect() as connection:
             connection.execute(text("SELECT 1"))
+
+    def check_permissions(self, role: str) -> None:
+        with self._engine.connect() as connection:
+            check_database_permissions(connection, role)
 
     def dispose(self) -> None:
         self._engine.dispose()

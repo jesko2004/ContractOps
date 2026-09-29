@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from uuid import UUID, uuid4
 
 from sqlalchemy import text
+from sqlalchemy.engine import Connection
 
 from contractops.infrastructure.document_parsing import FindingCandidate, ParsedBlock
 from contractops.infrastructure.postgres.database import WorkerDatabase
@@ -21,6 +22,7 @@ class ClaimedIngestionJob:
     expected_hash: str
     attempt_count: int
     max_attempts: int
+    lease_owner: str
 
 
 class PostgresIngestionStore:
@@ -84,7 +86,50 @@ class PostgresIngestionStore:
                 expected_hash=row["content_hash"],
                 attempt_count=row["attempt_count"],
                 max_attempts=row["max_attempts"],
+                lease_owner=worker_id,
             )
+
+    def renew(self, job: ClaimedIngestionJob, *, lease_seconds: int) -> bool:
+        with self._database.transaction() as connection:
+            result = connection.execute(
+                text(
+                    """
+                    UPDATE ingestion_jobs
+                    SET lease_expires_at = now() + make_interval(secs => :lease_seconds),
+                        updated_at = now()
+                    WHERE id = :id AND status = 'RUNNING'
+                      AND lease_owner = :owner AND attempt_count = :attempt
+                      AND lease_expires_at > now()
+                    RETURNING id
+                    """
+                ),
+                {
+                    "id": job.id,
+                    "owner": job.lease_owner,
+                    "attempt": job.attempt_count,
+                    "lease_seconds": lease_seconds,
+                },
+            )
+            return result.scalar_one_or_none() is not None
+
+    @staticmethod
+    def _lock_owned_job(connection: Connection, job: ClaimedIngestionJob) -> bool:
+        # attempt_count fences an older claim even when a process reuses the same worker ID.
+        return (
+            connection.execute(
+                text(
+                    """
+                SELECT id FROM ingestion_jobs
+                WHERE id = :id AND status = 'RUNNING'
+                  AND lease_owner = :owner AND attempt_count = :attempt
+                  AND lease_expires_at > now()
+                FOR UPDATE
+                """
+                ),
+                {"id": job.id, "owner": job.lease_owner, "attempt": job.attempt_count},
+            ).scalar_one_or_none()
+            is not None
+        )
 
     def succeed(
         self,
@@ -93,20 +138,7 @@ class PostgresIngestionStore:
         findings: tuple[tuple[int, FindingCandidate], ...],
     ) -> None:
         with self._database.transaction() as connection:
-            locked = (
-                connection.execute(
-                    text(
-                        """
-                    SELECT status, lease_owner FROM ingestion_jobs
-                    WHERE id = :id FOR UPDATE
-                    """
-                    ),
-                    {"id": job.id},
-                )
-                .mappings()
-                .one()
-            )
-            if locked["status"] != "RUNNING":
+            if not self._lock_owned_job(connection, job):
                 return
             chunk_ids: dict[int, UUID] = {}
             for block in blocks:
@@ -233,6 +265,8 @@ class PostgresIngestionStore:
         }
         status = "FAILED" if terminal else "RETRY_WAIT"
         with self._database.transaction() as connection:
+            if not self._lock_owned_job(connection, job):
+                return
             connection.execute(
                 text(
                     """

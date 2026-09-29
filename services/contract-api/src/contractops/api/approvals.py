@@ -5,7 +5,7 @@ from decimal import Decimal
 from typing import Annotated, Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, Response, status
+from fastapi import APIRouter, Depends, Header, Query, Response, status
 from pydantic import BaseModel, Field, StringConstraints
 
 from contractops.api.dependencies import authenticated_actor, get_approval_service
@@ -243,10 +243,16 @@ def submit_contract(
 
 @router.get("/approval-tasks", response_model=list[ApprovalStepResponse])
 def list_tasks(
+    response: Response,
     actor: Annotated[ActorContext, Depends(authenticated_actor)],
     service: Annotated[ApprovalService, Depends(get_approval_service)],
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+    cursor: Annotated[str | None, Query(max_length=512)] = None,
 ) -> list[ApprovalStepResponse]:
-    return [ApprovalStepResponse.from_domain(item) for item in service.list_tasks(actor)]
+    page = service.list_tasks_page(actor, limit=limit, cursor=cursor)
+    if page.next_cursor:
+        response.headers["X-Next-Cursor"] = page.next_cursor
+    return [ApprovalStepResponse.from_domain(item) for item in page.items]
 
 
 @router.get(
