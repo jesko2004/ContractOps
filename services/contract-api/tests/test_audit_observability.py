@@ -3,17 +3,42 @@ from __future__ import annotations
 import json
 import logging
 from collections.abc import Sequence
+from unittest.mock import MagicMock
 from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
 
+from contractops import observability
 from contractops.application.audits import AuditService
 from contractops.context import ActorContext, DataScope, Role
 from contractops.domain.audit import AuditCategory, AuditEvent, RuntimeFailure
 from contractops.errors import ContractOpsError
 from contractops.main import create_app
 from contractops.observability import JsonFormatter
+
+
+@pytest.mark.parametrize(
+    ("endpoint", "expected"),
+    [
+        ("https://otel.example", "https://otel.example/v1/traces"),
+        ("https://otel.example/", "https://otel.example/v1/traces"),
+        ("https://otel.example/v1/traces", "https://otel.example/v1/traces"),
+        ("https://otel.example/prefix/v1/traces/", "https://otel.example/prefix/v1/traces"),
+        ("https://otel.example/prefix?x=1", "https://otel.example/prefix/v1/traces?x=1"),
+    ],
+)
+def test_tracing_uses_exact_signal_endpoint(
+    monkeypatch: pytest.MonkeyPatch, endpoint: str, expected: str
+) -> None:
+    exporter = MagicMock()
+    monkeypatch.setattr(observability, "_configured", False)
+    monkeypatch.setattr(observability, "OTLPSpanExporter", exporter)
+    monkeypatch.setattr(observability, "BatchSpanProcessor", MagicMock())
+    monkeypatch.setattr(observability, "TracerProvider", MagicMock())
+    monkeypatch.setattr(observability.trace, "set_tracer_provider", MagicMock())
+    observability.configure_tracing(service_name="test", endpoint=endpoint)
+    exporter.assert_called_once_with(endpoint=expected)
 
 
 class EmptyAuditRepository:

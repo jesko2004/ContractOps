@@ -76,7 +76,7 @@ def check_dependencies(settings: Settings, role: RuntimeRole) -> tuple[str, ...]
     if database_url:
         database = Database(database_url)
         try:
-            database.check()
+            database.check_permissions(role)
         finally:
             database.dispose()
         checked.append("postgresql")

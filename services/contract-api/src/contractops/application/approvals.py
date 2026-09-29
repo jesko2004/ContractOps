@@ -8,6 +8,12 @@ from typing import Protocol
 from uuid import UUID
 
 from contractops.application.contracts import ContractService
+from contractops.application.task_pagination import (
+    ApprovalTaskPage,
+    TaskCursor,
+    decode_cursor,
+    encode_cursor,
+)
 from contractops.context import ActorContext, DataScope, Role
 from contractops.domain.approval import (
     ApprovalDecision,
@@ -63,11 +69,11 @@ class ApprovalWorkflow(Protocol):
         request_hash: str,
     ) -> tuple[ApprovalInstance, bool]: ...
 
-    def get_instance(
-        self, actor: ActorContext, instance_id: UUID
-    ) -> ApprovalInstance | None: ...
+    def get_instance(self, actor: ActorContext, instance_id: UUID) -> ApprovalInstance | None: ...
 
-    def list_tasks(self, actor: ActorContext) -> tuple[ApprovalStep, ...]: ...
+    def list_tasks(
+        self, actor: ActorContext, *, limit: int = 50, after: TaskCursor | None = None
+    ) -> tuple[ApprovalStep, ...]: ...
 
     def claim_step(
         self,
@@ -130,9 +136,7 @@ class ApprovalService:
         Role.BUSINESS_APPROVER,
         Role.TENANT_ADMIN,
     )
-    _STEP_ROLES = frozenset(
-        {Role.LEGAL_ADMIN, Role.FINANCE_APPROVER, Role.BUSINESS_APPROVER}
-    )
+    _STEP_ROLES = frozenset({Role.LEGAL_ADMIN, Role.FINANCE_APPROVER, Role.BUSINESS_APPROVER})
 
     def __init__(self, workflow: ApprovalWorkflow, contracts: ContractService) -> None:
         self._workflow = workflow
@@ -202,9 +206,23 @@ class ApprovalService:
         return value
 
     def list_tasks(self, actor: ActorContext) -> tuple[ApprovalStep, ...]:
+        return self.list_tasks_page(actor).items
+
+    def list_tasks_page(
+        self, actor: ActorContext, *, limit: int = 50, cursor: str | None = None
+    ) -> ApprovalTaskPage:
         if not actor.has_any_role(*self._APPROVER_ROLES):
             raise _forbidden("the caller cannot list approval tasks")
-        return self._workflow.list_tasks(actor)
+        if not 1 <= limit <= 200:
+            raise ContractOpsError(
+                code="pagination_limit_invalid",
+                message="limit must be between 1 and 200",
+                status_code=422,
+            )
+        rows = self._workflow.list_tasks(actor, limit=limit + 1, after=decode_cursor(actor, cursor))
+        items = rows[:limit]
+        next_cursor = encode_cursor(actor, items[-1]) if len(rows) > limit else None
+        return ApprovalTaskPage(items, next_cursor)
 
     def claim_step(
         self,
@@ -239,9 +257,7 @@ class ApprovalService:
             decision,
             command,
             idempotency_key=idempotency_key,
-            request_hash=_request_hash(
-                {"decision": decision.value, "command": asdict(command)}
-            ),
+            request_hash=_request_hash({"decision": decision.value, "command": asdict(command)}),
         )
 
     def transfer_step(
@@ -303,9 +319,7 @@ class ApprovalService:
                 code="approval_policy_amount_range_invalid",
                 message="minimum_amount cannot exceed maximum_amount",
             )
-        amounts: tuple[Decimal | None, ...] = tuple(
-            step.minimum_amount for step in command.steps
-        )
+        amounts: tuple[Decimal | None, ...] = tuple(step.minimum_amount for step in command.steps)
         if any(value is not None and value < 0 for value in amounts):
             raise ContractOpsError(
                 code="approval_policy_step_amount_invalid",

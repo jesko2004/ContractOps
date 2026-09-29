@@ -62,9 +62,7 @@ def _actor(tenant_id: UUID, *roles: Role, department_id: UUID | None = None) -> 
         tenant_id=tenant_id,
         user_id=uuid4(),
         roles=frozenset(roles),
-        department_ids=(
-            frozenset({department_id}) if department_id is not None else frozenset()
-        ),
+        department_ids=(frozenset({department_id}) if department_id is not None else frozenset()),
         data_scope=DataScope.TENANT,
     )
 
@@ -230,9 +228,7 @@ def test_published_policy_is_immutable_and_snapshot_survives_new_version(
     owner = _actor(tenant_id, Role.CONTRACT_OWNER, department_id=department_id)
     contracts, approvals = _services(database)
     first_policy_id, first_version = _create_policy(approvals, admin, name="Policy v1")
-    first_contract = _create_contract(
-        contracts, owner, department_id, Decimal("50000.00")
-    )
+    first_contract = _create_contract(contracts, owner, department_id, Decimal("50000.00"))
     first_instance, _ = approvals.submit_contract(
         owner, first_contract.id, idempotency_key=f"submit-{uuid4()}"
     )
@@ -269,9 +265,7 @@ def test_published_policy_is_immutable_and_snapshot_survives_new_version(
     assert reloaded_first.policy_id == first_policy_id
     assert reloaded_first.policy_snapshot["name"] == "Policy v1"
 
-    second_contract = _create_contract(
-        contracts, owner, department_id, Decimal("50000.00")
-    )
+    second_contract = _create_contract(contracts, owner, department_id, Decimal("50000.00"))
     second_instance, _ = approvals.submit_contract(
         owner, second_contract.id, idempotency_key=f"submit-{uuid4()}"
     )
@@ -289,9 +283,7 @@ def test_personal_task_transfer_and_request_changes(database: Database) -> None:
     contracts, approvals = _services(database)
     _create_policy(approvals, admin)
     contract = _create_contract(contracts, owner, department_id, Decimal("50000.00"))
-    instance, _ = approvals.submit_contract(
-        owner, contract.id, idempotency_key=f"submit-{uuid4()}"
-    )
+    instance, _ = approvals.submit_contract(owner, contract.id, idempotency_key=f"submit-{uuid4()}")
     step = instance.steps[0]
 
     assert [item.id for item in approvals.list_tasks(first_legal)] == [step.id]
@@ -336,9 +328,7 @@ def test_personal_task_transfer_and_request_changes(database: Database) -> None:
     assert updated.status is ApprovalInstanceStatus.CHANGES_REQUESTED
     assert contracts.get_contract(owner, contract.id).status is ContractStatus.CHANGES_REQUESTED
     with pytest.raises(ContractOpsError) as submit_error:
-        approvals.submit_contract(
-            owner, contract.id, idempotency_key=f"submit-{uuid4()}"
-        )
+        approvals.submit_contract(owner, contract.id, idempotency_key=f"submit-{uuid4()}")
     assert submit_error.value.code == "contract_not_submittable"
 
     revised, _ = contracts.add_version(
@@ -355,3 +345,46 @@ def test_personal_task_transfer_and_request_changes(database: Database) -> None:
     editable = contracts.get_contract(owner, contract.id)
     assert editable.status is ContractStatus.DRAFT
     assert editable.current_version_id == revised.id
+
+
+def test_task_cursor_pagination_handles_ties_and_completed_previous_page(
+    database: Database,
+) -> None:
+    tenant, department = _tenant(), uuid4()
+    admin = _actor(tenant, Role.TENANT_ADMIN)
+    owner = _actor(tenant, Role.CONTRACT_OWNER, department_id=department)
+    contracts, approvals = _services(database)
+    _create_policy(approvals, admin)
+    expected = set()
+    for _ in range(5):
+        contract = _create_contract(contracts, owner, department, Decimal("100"))
+        instance, _ = approvals.submit_contract(owner, contract.id, idempotency_key=str(uuid4()))
+        expected.add(instance.steps[0].id)
+    assert ADMIN_DATABASE_URL
+    with psycopg.connect(ADMIN_DATABASE_URL) as connection:
+        connection.execute(
+            "UPDATE approval_workflow_steps SET created_at='2026-01-01' WHERE tenant_id=%s",
+            (tenant,),
+        )
+    first = approvals.list_tasks_page(admin, limit=2)
+    assert len(first.items) == 2 and first.next_cursor
+    # A cursor carries the sort key, so removal from the READY set cannot invalidate it.
+    step = first.items[-1]
+    claimed, _ = approvals.claim_step(
+        admin, step.id, StepActionCommand(step.state_version), idempotency_key=str(uuid4())
+    )
+    approvals.decide_step(
+        admin,
+        step.id,
+        ApprovalDecision.APPROVE,
+        StepActionCommand(claimed.state_version),
+        idempotency_key=str(uuid4()),
+    )
+    second = approvals.list_tasks_page(admin, limit=2, cursor=first.next_cursor)
+    third = approvals.list_tasks_page(admin, limit=2, cursor=second.next_cursor)
+    assert len(second.items) == 2 and second.next_cursor
+    assert len(third.items) == 1 and third.next_cursor is None
+    ids = [step.id for page in (first, second, third) for step in page.items]
+    assert len(set(ids)) == 5 and set(ids) == expected
+    with pytest.raises(ContractOpsError, match="cursor"):
+        approvals.list_tasks_page(_actor(_tenant(), Role.TENANT_ADMIN), cursor=first.next_cursor)

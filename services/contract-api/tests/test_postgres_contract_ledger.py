@@ -92,6 +92,33 @@ def test_rls_hides_contract_from_another_tenant(database: Database) -> None:
     assert error.value.code == "contract_not_found"
 
 
+def test_expired_idempotency_key_can_be_reused_without_affecting_other_tenants(
+    database: Database,
+) -> None:
+    department = uuid4()
+    actor = _actor(_tenant(), department)
+    other = _actor(_tenant(), uuid4())
+    service = ContractService(PostgresContractLedger(database))
+    key = f"expiry-{uuid4()}"
+    first, _ = service.create_contract(actor, _command(department), idempotency_key=key)
+    other_command = _command(next(iter(other.department_ids)))
+    other_contract, _ = service.create_contract(other, other_command, idempotency_key=key)
+    assert ADMIN_DATABASE_URL
+    with psycopg.connect(ADMIN_DATABASE_URL) as connection:
+        connection.execute(
+            "UPDATE idempotency_records SET expires_at = now() - interval '1 second' "
+            "WHERE tenant_id = %s AND idempotency_key = %s",
+            (actor.tenant_id, key),
+        )
+    command = _command(department)
+    replacement, replayed = service.create_contract(actor, command, idempotency_key=key)
+    assert not replayed and replacement.id != first.id
+    again, replayed = service.create_contract(actor, command, idempotency_key=key)
+    assert replayed and again.id == replacement.id
+    again, replayed = service.create_contract(other, other_command, idempotency_key=key)
+    assert replayed and again.id == other_contract.id
+
+
 def test_idempotent_version_creation_and_tenant_object_key(database: Database) -> None:
     department_id = uuid4()
     actor = _actor(_tenant(), department_id)

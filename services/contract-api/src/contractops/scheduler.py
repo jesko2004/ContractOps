@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import logging
 import socket
 import time
 from datetime import UTC, datetime
@@ -11,6 +12,7 @@ from contractops.infrastructure.postgres import (
     PostgresSchedulerObligationStore,
     WorkerDatabase,
 )
+from contractops.infrastructure.postgres.idempotency import purge_expired
 from contractops.observability import configure_logging, configure_tracing, start_metrics_server
 from contractops.preflight import validate_runtime_role
 
@@ -37,7 +39,14 @@ def main() -> None:
         lease_seconds=settings.obligation_lease_seconds,
     )
     try:
+        next_cleanup = 0.0
         while True:
+            if time.monotonic() >= next_cleanup:
+                try:
+                    purge_expired(database)
+                except Exception:
+                    logging.getLogger(__name__).exception("idempotency cleanup failed")
+                next_cleanup = time.monotonic() + 60
             processed = scheduler.run_once(datetime.now(UTC))
             if arguments.once:
                 break

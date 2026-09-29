@@ -25,6 +25,7 @@ from contractops.domain.contract import (
 )
 from contractops.errors import ContractOpsError
 from contractops.infrastructure.postgres.database import Database
+from contractops.infrastructure.postgres.idempotency import expire_key
 
 _SAFE_FILE_NAME = re.compile(r"[^A-Za-z0-9._-]+")
 
@@ -274,6 +275,7 @@ class PostgresContractLedger(ContractLedger):
         idempotency_key: str,
         request_hash: str,
     ) -> UUID | None:
+        expire_key(connection, operation, idempotency_key)
         row = (
             connection.execute(
                 text(

@@ -15,6 +15,7 @@ from contractops.application.approvals import (
     StepActionCommand,
     TransferStepCommand,
 )
+from contractops.application.task_pagination import TaskCursor
 from contractops.context import ActorContext, DataScope, Role, get_request_context
 from contractops.domain.approval import (
     ApprovalDecision,
@@ -31,6 +32,7 @@ from contractops.domain.approval import (
 from contractops.domain.contract import Contract, ContractStatus
 from contractops.errors import ContractOpsError
 from contractops.infrastructure.postgres.database import Database
+from contractops.infrastructure.postgres.idempotency import expire_key
 
 
 class PostgresApprovalWorkflow(ApprovalWorkflow):
@@ -304,7 +306,11 @@ class PostgresApprovalWorkflow(ApprovalWorkflow):
         with self._database.transaction(actor) as connection:
             return self._load_instance(connection, instance_id)
 
-    def list_tasks(self, actor: ActorContext) -> tuple[ApprovalStep, ...]:
+    def list_tasks(
+        self, actor: ActorContext, *, limit: int = 50, after: TaskCursor | None = None
+    ) -> tuple[ApprovalStep, ...]:
+        if not 1 <= limit <= 201:
+            raise ValueError("task query limit must be between 1 and 201")
         role_values = [role.value for role in actor.roles]
         with self._database.transaction(actor) as connection:
             rows = (
@@ -336,7 +342,13 @@ class PostgresApprovalWorkflow(ApprovalWorkflow):
                             OR contract.department_id = ANY(CAST(:department_ids AS uuid[]))
                             OR (:data_scope = 'OWN' AND step.assigned_to = :user_id)
                           )
-                        ORDER BY step.created_at, step.step_order
+                          AND (
+                            CAST(:after_at AS timestamptz) IS NULL
+                            OR (step.created_at, step.id) >
+                               (CAST(:after_at AS timestamptz), CAST(:after_id AS uuid))
+                          )
+                        ORDER BY step.created_at, step.id
+                        LIMIT :limit
                         """
                     ),
                     {
@@ -344,6 +356,9 @@ class PostgresApprovalWorkflow(ApprovalWorkflow):
                         "roles": role_values,
                         "data_scope": actor.data_scope.value,
                         "department_ids": [str(value) for value in actor.department_ids],
+                        "after_at": after.created_at if after else None,
+                        "after_id": after.id if after else None,
+                        "limit": limit,
                     },
                 )
                 .mappings()
@@ -849,6 +864,7 @@ class PostgresApprovalWorkflow(ApprovalWorkflow):
         idempotency_key: str,
         request_hash: str,
     ) -> UUID | None:
+        expire_key(connection, operation, idempotency_key)
         row = (
             connection.execute(
                 text(

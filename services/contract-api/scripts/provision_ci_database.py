@@ -66,20 +66,20 @@ def main() -> None:
         connection.execute("GRANT SELECT ON contracts TO contractops_worker")
         connection.execute("GRANT SELECT, UPDATE ON contract_versions TO contractops_worker")
         connection.execute("GRANT SELECT, UPDATE ON ingestion_jobs TO contractops_worker")
-        connection.execute(
-            "GRANT SELECT, INSERT, DELETE ON contract_chunks TO contractops_worker"
-        )
+        connection.execute("GRANT SELECT, INSERT, DELETE ON contract_chunks TO contractops_worker")
         connection.execute(
             "GRANT SELECT, INSERT, DELETE ON document_findings TO contractops_worker"
         )
         connection.execute("GRANT SELECT, UPDATE ON obligations TO contractops_worker")
-        connection.execute(
-            "GRANT SELECT, INSERT, UPDATE ON risk_events TO contractops_worker"
-        )
+        connection.execute("GRANT SELECT, INSERT, UPDATE ON risk_events TO contractops_worker")
         connection.execute(
             "GRANT SELECT, INSERT, UPDATE ON obligation_reminders TO contractops_worker"
         )
         connection.execute("GRANT INSERT ON audit_events TO contractops_worker")
+        connection.execute("GRANT SELECT ON alembic_version TO contractops_worker")
+        connection.execute(
+            "GRANT SELECT, UPDATE, DELETE ON idempotency_records TO contractops_worker"
+        )
 
 
 if __name__ == "__main__":

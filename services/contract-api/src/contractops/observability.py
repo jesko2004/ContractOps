@@ -7,6 +7,7 @@ from contextlib import AbstractContextManager
 from random import getrandbits
 from time import perf_counter
 from typing import Any
+from urllib.parse import urlsplit, urlunsplit
 
 from opentelemetry import context as otel_context
 from opentelemetry import trace
@@ -62,8 +63,13 @@ def configure_tracing(*, service_name: str, endpoint: str | None) -> None:
             return
         provider = TracerProvider(resource=Resource.create({"service.name": service_name}))
         if endpoint:
+            parts = urlsplit(endpoint)
+            path = parts.path.rstrip("/")
+            if not path.endswith("/v1/traces"):
+                path += "/v1/traces"
+            trace_endpoint = urlunsplit(parts._replace(path=path))
             provider.add_span_processor(
-                BatchSpanProcessor(OTLPSpanExporter(endpoint=endpoint.rstrip("/") + "/v1/traces"))
+                BatchSpanProcessor(OTLPSpanExporter(endpoint=trace_endpoint))
             )
         trace.set_tracer_provider(provider)
         _configured = True

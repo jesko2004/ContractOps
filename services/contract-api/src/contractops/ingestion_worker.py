@@ -4,10 +4,12 @@ import argparse
 import hashlib
 import socket
 import time
+from functools import partial
 
 from contractops.config import get_settings
 from contractops.errors import ContractOpsError
 from contractops.infrastructure.document_parsing import extract_rule_findings, parse_document
+from contractops.infrastructure.lease_heartbeat import maintain_lease
 from contractops.infrastructure.model_suggestions import OpenAICompatibleFindingSuggester
 from contractops.infrastructure.object_store import MinioObjectStore
 from contractops.infrastructure.postgres.database import WorkerDatabase
@@ -54,24 +56,28 @@ def main() -> None:
                 time.sleep(settings.ingestion_poll_interval_seconds)
                 continue
             try:
-                content = object_store.get_bytes(job.object_key)
-                actual_hash = hashlib.sha256(content).hexdigest()
-                if actual_hash != job.expected_hash:
-                    raise ContractOpsError(
-                        code="document_hash_mismatch",
-                        message="uploaded document hash does not match the declaration",
-                        status_code=422,
+                with maintain_lease(
+                    partial(store.renew, job, lease_seconds=settings.ingestion_lease_seconds),
+                    interval_seconds=settings.ingestion_lease_seconds / 3,
+                ):
+                    content = object_store.get_bytes(job.object_key)
+                    actual_hash = hashlib.sha256(content).hexdigest()
+                    if actual_hash != job.expected_hash:
+                        raise ContractOpsError(
+                            code="document_hash_mismatch",
+                            message="uploaded document hash does not match the declaration",
+                            status_code=422,
+                        )
+                    blocks = parse_document(content, job.media_type)
+                    findings = tuple(
+                        (block.sequence, finding)
+                        for block in blocks
+                        for finding in (
+                            extract_rule_findings(block)
+                            + (() if suggester is None else suggester.suggest(block.content))
+                        )
                     )
-                blocks = parse_document(content, job.media_type)
-                findings = tuple(
-                    (block.sequence, finding)
-                    for block in blocks
-                    for finding in (
-                        extract_rule_findings(block)
-                        + (() if suggester is None else suggester.suggest(block.content))
-                    )
-                )
-                store.succeed(job, blocks, findings)
+                    store.succeed(job, blocks, findings)
             except ContractOpsError as error:
                 store.fail(job, code=error.code, message=error.message)
             except Exception as error:
