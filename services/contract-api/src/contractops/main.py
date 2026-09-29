@@ -2,6 +2,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from contractops.api import (
     approvals,
@@ -35,6 +36,7 @@ from contractops.infrastructure.postgres import (
 )
 from contractops.middleware.request_context import RequestContextMiddleware
 from contractops.observability import configure_logging, configure_tracing
+from contractops.preflight import validate_runtime_role
 
 
 @asynccontextmanager
@@ -58,6 +60,7 @@ def create_app(
     object_store: ObjectStore | None = None,
 ) -> FastAPI:
     settings = settings or get_settings()
+    validate_runtime_role(settings, "api")
     configure_logging(settings.log_level)
     configure_tracing(
         service_name=settings.otel_service_name,
@@ -119,6 +122,7 @@ def create_app(
         max_size_bytes=settings.document_max_size_bytes,
         upload_expiry_seconds=settings.upload_url_expiry_seconds,
     )
+    application.add_middleware(TrustedHostMiddleware, allowed_hosts=list(settings.trusted_hosts))
     application.add_middleware(RequestContextMiddleware)
     install_error_handlers(application)
     application.include_router(health.router)

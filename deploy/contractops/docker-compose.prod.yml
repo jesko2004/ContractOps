@@ -1,0 +1,200 @@
+x-observed-environment: &observed-environment
+  CONTRACTOPS_ENVIRONMENT: production
+  CONTRACTOPS_ALLOW_INSECURE_DEPENDENCIES: ${CONTRACTOPS_ALLOW_INSECURE_DEPENDENCIES:-false}
+  CONTRACTOPS_LOG_LEVEL: ${CONTRACTOPS_LOG_LEVEL:-INFO}
+  CONTRACTOPS_OTEL_SERVICE_NAME: ${CONTRACTOPS_OTEL_SERVICE_NAME:-contractops-api}
+  CONTRACTOPS_OTEL_EXPORTER_OTLP_ENDPOINT: ${CONTRACTOPS_OTEL_EXPORTER_OTLP_ENDPOINT:?set the OTLP HTTP endpoint}
+
+x-api-environment: &api-environment
+  <<: *observed-environment
+  CONTRACTOPS_RUNTIME_ROLE: api
+  CONTRACTOPS_ALLOWED_HOSTS: ${CONTRACTOPS_ALLOWED_HOSTS:?set the public API host},127.0.0.1,localhost
+  CONTRACTOPS_DATABASE_URL: ${CONTRACTOPS_DATABASE_URL:?set the TLS application database URL}
+  CONTRACTOPS_JWT_SECRET: ${CONTRACTOPS_JWT_SECRET:?set a random JWT secret of at least 32 characters}
+  CONTRACTOPS_JWT_ISSUER: ${CONTRACTOPS_JWT_ISSUER:-contractops}
+  CONTRACTOPS_JWT_AUDIENCE: ${CONTRACTOPS_JWT_AUDIENCE:-contractops-api}
+  CONTRACTOPS_OBJECT_STORE_ENDPOINT: ${CONTRACTOPS_OBJECT_STORE_ENDPOINT:?set the HTTPS object-store endpoint}
+  CONTRACTOPS_OBJECT_STORE_ACCESS_KEY: ${CONTRACTOPS_OBJECT_STORE_ACCESS_KEY:?set the object-store access key}
+  CONTRACTOPS_OBJECT_STORE_SECRET_KEY: ${CONTRACTOPS_OBJECT_STORE_SECRET_KEY:?set the object-store secret key}
+  CONTRACTOPS_OBJECT_STORE_BUCKET: ${CONTRACTOPS_OBJECT_STORE_BUCKET:?set the contract bucket}
+  CONTRACTOPS_OBJECT_STORE_SECURE: ${CONTRACTOPS_OBJECT_STORE_SECURE:-true}
+
+x-event-worker-environment: &event-worker-environment
+  <<: *observed-environment
+  CONTRACTOPS_RUNTIME_ROLE: event-worker
+  CONTRACTOPS_WORKER_DATABASE_URL: ${CONTRACTOPS_WORKER_DATABASE_URL:?set the TLS worker database URL}
+  CONTRACTOPS_REDIS_URL: ${CONTRACTOPS_REDIS_URL:?set the TLS Redis URL}
+  CONTRACTOPS_NOTIFICATION_WEBHOOK_URL: ${CONTRACTOPS_NOTIFICATION_WEBHOOK_URL:-}
+  CONTRACTOPS_NOTIFICATION_WEBHOOK_SECRET: ${CONTRACTOPS_NOTIFICATION_WEBHOOK_SECRET:-}
+  CONTRACTOPS_NOTIFICATION_ALLOW_PRIVATE_NETWORKS: "false"
+
+x-ingestion-worker-environment: &ingestion-worker-environment
+  <<: *observed-environment
+  CONTRACTOPS_RUNTIME_ROLE: ingestion-worker
+  CONTRACTOPS_WORKER_DATABASE_URL: ${CONTRACTOPS_WORKER_DATABASE_URL:?set the TLS worker database URL}
+  CONTRACTOPS_OBJECT_STORE_ENDPOINT: ${CONTRACTOPS_OBJECT_STORE_ENDPOINT:?set the HTTPS object-store endpoint}
+  CONTRACTOPS_OBJECT_STORE_ACCESS_KEY: ${CONTRACTOPS_OBJECT_STORE_ACCESS_KEY:?set the object-store access key}
+  CONTRACTOPS_OBJECT_STORE_SECRET_KEY: ${CONTRACTOPS_OBJECT_STORE_SECRET_KEY:?set the object-store secret key}
+  CONTRACTOPS_OBJECT_STORE_BUCKET: ${CONTRACTOPS_OBJECT_STORE_BUCKET:?set the contract bucket}
+  CONTRACTOPS_OBJECT_STORE_SECURE: ${CONTRACTOPS_OBJECT_STORE_SECURE:-true}
+  CONTRACTOPS_DOCUMENT_MODEL_ASSISTANCE_ENABLED: ${CONTRACTOPS_DOCUMENT_MODEL_ASSISTANCE_ENABLED:-false}
+  CONTRACTOPS_DOCUMENT_MODEL_NAME: ${CONTRACTOPS_DOCUMENT_MODEL_NAME:-qwen-plus}
+  CONTRACTOPS_MODEL_BASE_URL: ${CONTRACTOPS_MODEL_BASE_URL:-https://model.invalid/v1}
+
+x-scheduler-environment: &scheduler-environment
+  <<: *observed-environment
+  CONTRACTOPS_RUNTIME_ROLE: scheduler
+  CONTRACTOPS_WORKER_DATABASE_URL: ${CONTRACTOPS_WORKER_DATABASE_URL:?set the TLS worker database URL}
+
+x-migration-environment: &migration-environment
+  CONTRACTOPS_ENVIRONMENT: production
+  CONTRACTOPS_RUNTIME_ROLE: migration
+  CONTRACTOPS_ALLOW_INSECURE_DEPENDENCIES: ${CONTRACTOPS_ALLOW_INSECURE_DEPENDENCIES:-false}
+  CONTRACTOPS_LOG_LEVEL: ${CONTRACTOPS_LOG_LEVEL:-INFO}
+  CONTRACTOPS_MIGRATION_DATABASE_URL: ${CONTRACTOPS_MIGRATION_DATABASE_URL:?set the TLS migration database URL}
+
+x-runtime: &runtime
+  image: ${CONTRACTOPS_IMAGE:?set an immutable ContractOps image reference}
+  init: true
+  read_only: true
+  tmpfs:
+    - /tmp:size=64m,mode=1777
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  pids_limit: 256
+  ulimits:
+    nofile:
+      soft: 4096
+      hard: 8192
+  restart: unless-stopped
+  stop_grace_period: 30s
+  logging:
+    driver: json-file
+    options:
+      max-size: 10m
+      max-file: "5"
+  networks:
+    - contractops-internal
+
+services:
+  preflight-migration:
+    <<: *runtime
+    environment: *migration-environment
+    command: ["contractops-preflight", "--role", "migration", "--check-dependencies"]
+    restart: "no"
+
+  migrate:
+    <<: *runtime
+    environment: *migration-environment
+    command: ["alembic", "upgrade", "head"]
+    depends_on:
+      preflight-migration:
+        condition: service_completed_successfully
+    restart: "no"
+
+  preflight-api:
+    <<: *runtime
+    environment: *api-environment
+    command: ["contractops-preflight", "--role", "api", "--check-dependencies"]
+    restart: "no"
+
+  preflight-event-worker:
+    <<: *runtime
+    environment: *event-worker-environment
+    command: ["contractops-preflight", "--role", "event-worker", "--check-dependencies"]
+    restart: "no"
+
+  preflight-ingestion-worker:
+    <<: *runtime
+    environment: *ingestion-worker-environment
+    command: ["contractops-preflight", "--role", "ingestion-worker", "--check-dependencies"]
+    restart: "no"
+
+  preflight-scheduler:
+    <<: *runtime
+    environment: *scheduler-environment
+    command: ["contractops-preflight", "--role", "scheduler", "--check-dependencies"]
+    restart: "no"
+
+  contract-api:
+    <<: *runtime
+    environment: *api-environment
+    command:
+      - uvicorn
+      - contractops.main:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8080"
+      - --workers
+      - ${CONTRACTOPS_API_WORKERS:-2}
+      - --proxy-headers
+      - --forwarded-allow-ips
+      - ${CONTRACTOPS_FORWARDED_ALLOW_IPS:-127.0.0.1}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      preflight-api:
+        condition: service_completed_successfully
+    ports:
+      - ${CONTRACTOPS_BIND_ADDRESS:-127.0.0.1}:${CONTRACTOPS_API_PORT:-8080}:8080
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health/ready', timeout=2)"
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
+    mem_limit: ${CONTRACTOPS_API_MEMORY_LIMIT:-1g}
+    cpus: ${CONTRACTOPS_API_CPU_LIMIT:-1.0}
+
+  contract-worker:
+    <<: *runtime
+    environment: *event-worker-environment
+    command: ["contractops-worker"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      preflight-event-worker:
+        condition: service_completed_successfully
+    ports:
+      - ${CONTRACTOPS_METRICS_BIND_ADDRESS:-127.0.0.1}:${CONTRACTOPS_WORKER_METRICS_HOST_PORT:-9101}:9101
+    mem_limit: ${CONTRACTOPS_WORKER_MEMORY_LIMIT:-512m}
+    cpus: ${CONTRACTOPS_WORKER_CPU_LIMIT:-0.5}
+
+  ingestion-worker:
+    <<: *runtime
+    environment: *ingestion-worker-environment
+    command: ["contractops-ingestion-worker"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      preflight-ingestion-worker:
+        condition: service_completed_successfully
+    ports:
+      - ${CONTRACTOPS_METRICS_BIND_ADDRESS:-127.0.0.1}:${CONTRACTOPS_INGESTION_METRICS_HOST_PORT:-9103}:9103
+    mem_limit: ${CONTRACTOPS_INGESTION_MEMORY_LIMIT:-1g}
+    cpus: ${CONTRACTOPS_INGESTION_CPU_LIMIT:-1.0}
+
+  obligation-scheduler:
+    <<: *runtime
+    environment: *scheduler-environment
+    command: ["contractops-scheduler"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      preflight-scheduler:
+        condition: service_completed_successfully
+    ports:
+      - ${CONTRACTOPS_METRICS_BIND_ADDRESS:-127.0.0.1}:${CONTRACTOPS_SCHEDULER_METRICS_HOST_PORT:-9102}:9102
+    mem_limit: ${CONTRACTOPS_SCHEDULER_MEMORY_LIMIT:-512m}
+    cpus: ${CONTRACTOPS_SCHEDULER_CPU_LIMIT:-0.5}
+
+networks:
+  contractops-internal:
+    driver: bridge

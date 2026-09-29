@@ -12,6 +12,7 @@ from contractops.infrastructure.postgres import (
     WorkerDatabase,
 )
 from contractops.observability import configure_logging, configure_tracing, start_metrics_server
+from contractops.preflight import validate_runtime_role
 
 
 def main() -> None:
@@ -19,6 +20,7 @@ def main() -> None:
     parser.add_argument("--once", action="store_true", help="process one due batch and stop")
     arguments = parser.parse_args()
     settings = get_settings()
+    validate_runtime_role(settings, "scheduler")
     if not settings.worker_database_url:
         raise SystemExit("CONTRACTOPS_WORKER_DATABASE_URL is required")
     configure_logging(settings.log_level)

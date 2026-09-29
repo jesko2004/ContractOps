@@ -53,6 +53,7 @@ ContractOps/
 - MinIO 预签名直传、上传完成校验、PDF/DOCX 解析、不可变证据块、规则/模型提示和版本 Diff；
 - Worker/Redis/通知故障恢复、恶意 DOCX、SSRF、敏感信息泄漏和租户越权安全门禁；
 - Locust 性能剖面、M7 证据生成器、运行手册和最终演示脚本；
+- production 配置 fail-closed 校验、按角色依赖预检和最小权限生产 Compose；
 - 产品边界、API 草案、里程碑、验收标准和持续更新记录。
 
 尚未收口的生产化事项包括：从成功的 M7 CI 产物回填精确性能数字、接入真实企业审批人
@@ -114,6 +115,7 @@ MinIO Console `59001`。默认密码只用于本地开发。
 - [M7 验收报告](architecture/M7-ACCEPTANCE-REPORT.md)
 - [最终演示脚本](architecture/CONTRACTOPS-DEMO.md)
 - [运行与故障处置手册](architecture/CONTRACTOPS-RUNBOOK.md)
+- [生产运行指南](architecture/CONTRACTOPS-PRODUCTION.md)
 - [原 EduMind 方案迁移说明](README-EDUMIND.md)
 
 ## 上游说明

@@ -21,3 +21,15 @@ def test_system_info() -> None:
     assert response.status_code == 200
     assert response.json()["name"] == "ContractOps Test API"
     assert response.json()["version"] == "9.9.9"
+
+
+def test_untrusted_host_is_rejected() -> None:
+    settings = Settings(allowed_hosts="api.contractops.example")
+    with TestClient(
+        create_app(settings=settings), base_url="http://api.contractops.example"
+    ) as client:
+        accepted = client.get("/health/live")
+        rejected = client.get("/health/live", headers={"Host": "attacker.example"})
+
+    assert accepted.status_code == 200
+    assert rejected.status_code == 400
