@@ -71,6 +71,32 @@ Redis 只承载可重放的 Stream，不是业务事实源；仍应开启认证�
 
 ## 5. 预检、迁移和启动
 
+推荐在部署主机上使用标准库发布脚本（Python 3.12+、Docker Compose v2）。先只验证配置：
+
+```bash
+python services/contract-api/scripts/deploy_preproduction.py \
+  --env-file /etc/contractops/contractops.env \
+  --api-url https://api.contractops.example \
+  --app-role contractops_app --worker-role contractops_worker
+```
+
+确认目标、备份及 HTTPS 入口就绪后，添加 `--apply` 才会执行部署。默认 Compose 项目名为
+`contractops-preproduction`；升级已有环境时必须用 `--project-name` 指定其原项目名，不能
+另外创建同端口的平行项目。环境文件必须位于仓库外；脚本忽略当前进程中的
+`CONTRACTOPS_*`，以选定文件为准。自建 CA 需配置部署主机和容器的可信证书，不要关闭校验。
+
+脚本核对所有服务使用相同的镜像摘要，以及实际连接身份与待授权角色一致，然后依次拉取
+镜像、迁移身份预检、迁移、运行角色授权、四个运行身份预检、等待 API 健康并检查三个
+Worker 的指标端点，最后经公共 HTTPS 入口检查 live/ready。一次性任务均带 `--no-deps`，
+避免 Compose 在授权或预检时隐式再次执行迁移。任一步失败即停止，不自动回滚数据库、
+删除容器或清理业务数据；已经成功的步骤仍然有效。dry-run 仅校验 Compose 配置、镜像
+摘要和连接身份，不验证外部依赖可达、运行时密钥强度或业务链路。
+
+子进程输出可能含连接凭据，脚本只输出阶段和退出码；失败时在受限运维终端按下方单步
+命令排查，勿把未脱敏日志贴入 CI、工单或聊天。发布脚本通过不等于业务验收通过，继续
+执行 [预生产验收清单](CONTRACTOPS-PREPRODUCTION-ACCEPTANCE.md)。
+
+需要单步排查时使用以下命令。
 以下命令中的环境文件不应位于仓库内：
 
 ```bash
