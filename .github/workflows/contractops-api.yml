@@ -260,4 +260,5 @@ jobs:
         run: |
           docker build --target test -t contractops-test:audit services/contract-api
           docker run --rm contractops-test:audit python -m pytest \
-            tests/test_lease_heartbeat.py tests/test_task_pagination.py tests/test_audit_observability.py
+            tests/test_lease_heartbeat.py tests/test_task_pagination.py \
+            tests/test_audit_observability.py tests/test_preproduction_release.py
