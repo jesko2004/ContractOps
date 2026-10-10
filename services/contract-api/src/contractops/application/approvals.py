@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from decimal import Decimal
 from typing import Protocol
@@ -141,6 +142,8 @@ class ApprovalService:
     def __init__(self, workflow: ApprovalWorkflow, contracts: ContractService) -> None:
         self._workflow = workflow
         self._contracts = contracts
+        self.submission_guard: Callable[[ActorContext, UUID], None] | None = None
+        self.decision_guard: Callable[[ActorContext, UUID, ApprovalDecision], None] | None = None
 
     def create_policy(
         self,
@@ -181,6 +184,8 @@ class ApprovalService:
                 code="contract_version_required",
                 message="a contract version is required before submission",
             )
+        if self.submission_guard is not None and contract.status.value == "DRAFT":
+            self.submission_guard(actor, contract_id)
         return self._workflow.submit_contract(
             actor,
             contract_id,
@@ -251,6 +256,8 @@ class ApprovalService:
         idempotency_key: str,
     ) -> tuple[ApprovalStep, bool]:
         self._require_approver(actor)
+        if self.decision_guard is not None:
+            self.decision_guard(actor, step_id, decision)
         return self._workflow.decide_step(
             actor,
             step_id,

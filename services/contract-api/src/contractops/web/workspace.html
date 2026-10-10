@@ -1,0 +1,1942 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>ContractOps · 知识与合同工作台</title>
+    <style>
+      :root {
+        --ink: #1b263b;
+        --muted: #66738b;
+        --line: #e3e8ef;
+        --blue: #245eea;
+        --bg: #f5f7fb;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font:
+          14px/1.6 system-ui,
+          'Microsoft YaHei',
+          sans-serif;
+        color: var(--ink);
+        background: var(--bg);
+      }
+      button,
+      input,
+      textarea,
+      select {
+        font: inherit;
+      }
+      button {
+        cursor: pointer;
+        border: 1px solid var(--line);
+        background: white;
+        color: var(--ink);
+        padding: 8px 14px;
+        border-radius: 7px;
+      }
+      button:hover {
+        border-color: #8ca9ee;
+      }
+      button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+      .primary {
+        background: var(--blue);
+        color: white;
+        border-color: var(--blue);
+      }
+      .shell {
+        display: grid;
+        grid-template-columns: 220px minmax(0, 1fr);
+        min-height: 100vh;
+      }
+      .sidebar {
+        background: #15233a;
+        color: #c1cce0;
+        padding: 26px 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+      }
+      .brand {
+        font-size: 23px;
+        color: white;
+        font-weight: 750;
+        letter-spacing: -0.5px;
+      }
+      .brand small {
+        display: block;
+        font-size: 11px;
+        font-weight: 400;
+        letter-spacing: 1.5px;
+        color: #9dafc9;
+        margin-top: 2px;
+      }
+      .sidebar p {
+        font-size: 12px;
+        margin: 0;
+        color: #91a2bd;
+      }
+      .nav {
+        display: grid;
+        gap: 8px;
+      }
+      .nav button {
+        text-align: left;
+        background: transparent;
+        border-color: transparent;
+        color: #c1cce0;
+        padding: 11px 14px;
+      }
+      .nav button.active {
+        color: white;
+        background: #2b4267;
+        border-color: #375580;
+      }
+      .side-note {
+        margin-top: auto;
+        padding-top: 20px;
+        border-top: 1px solid #30405b;
+        font-size: 12px;
+      }
+      .main {
+        min-width: 0;
+      }
+      .topbar {
+        padding: 15px 32px;
+        background: white;
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+      }
+      .connection {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .connection input {
+        width: 260px;
+      }
+      .dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #9aa5b5;
+        margin-right: 7px;
+      }
+      .dot.ok {
+        background: #18a879;
+      }
+      .content {
+        padding: 28px 32px;
+        max-width: 1500px;
+        margin: auto;
+      }
+      h1 {
+        font-size: 26px;
+        line-height: 1.4;
+        margin: 0 0 7px;
+      }
+      h2 {
+        font-size: 17px;
+        margin: 0;
+      }
+      p {
+        margin: 0 0 12px;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .heading {
+        display: flex;
+        justify-content: space-between;
+        gap: 15px;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+      .banner {
+        font-size: 12px;
+        border: 1px solid #cbdaf7;
+        background: #edf3ff;
+        padding: 10px 14px;
+        border-radius: 7px;
+        margin-bottom: 20px;
+        color: #3d5b8f;
+      }
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-bottom: 22px;
+      }
+      .stat,
+      .panel {
+        background: white;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+      }
+      .stat {
+        padding: 17px 20px;
+      }
+      .stat span {
+        display: block;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .stat strong {
+        font-size: 28px;
+        font-weight: 650;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 250px minmax(0, 1fr);
+        gap: 20px;
+      }
+      .panel-title {
+        padding: 16px 18px;
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .base-list {
+        padding: 8px;
+        max-height: 520px;
+        overflow: auto;
+      }
+      .base-card {
+        display: block;
+        width: 100%;
+        text-align: left;
+        border: 1px solid transparent;
+        margin-bottom: 5px;
+        padding: 12px;
+      }
+      .base-card.active {
+        background: #edf3ff;
+        border-color: #bbcdf5;
+        color: #174ac1;
+      }
+      .base-card strong {
+        display: block;
+        overflow-wrap: anywhere;
+      }
+      .base-card small {
+        display: block;
+        color: var(--muted);
+        margin-top: 4px;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+      .upload-bar {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        flex-wrap: wrap;
+        padding: 15px 18px;
+        border-bottom: 1px solid var(--line);
+      }
+      .upload-bar input[type='file'] {
+        max-width: 260px;
+        font-size: 12px;
+      }
+      .filters {
+        display: flex;
+        gap: 9px;
+        flex-wrap: wrap;
+        padding: 14px 18px;
+      }
+      .filters input {
+        flex: 1;
+        min-width: 150px;
+      }
+      input,
+      textarea,
+      select {
+        border: 1px solid #d5dce7;
+        border-radius: 6px;
+        padding: 8px 10px;
+        background: white;
+        color: var(--ink);
+      }
+      input:focus,
+      textarea:focus,
+      select:focus {
+        outline: 2px solid #b8cdfd;
+        outline-offset: 1px;
+      }
+      .table-scroll {
+        overflow: auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+        font-size: 13px;
+      }
+      th {
+        font-weight: 500;
+        background: #f8fafc;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      td,
+      th {
+        padding: 12px 16px;
+        border-top: 1px solid var(--line);
+      }
+      td.filename {
+        min-width: 180px;
+        max-width: 280px;
+        overflow-wrap: anywhere;
+      }
+      td small {
+        display: block;
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .badge {
+        display: inline-block;
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 4px;
+        background: #eef1f6;
+        color: #5c6a80;
+        white-space: nowrap;
+      }
+      .badge.READY {
+        background: #e8f7ef;
+        color: #15794b;
+      }
+      .badge.FAILED {
+        background: #fff0ed;
+        color: #b34026;
+      }
+      .badge.PARSING {
+        background: #edf3ff;
+        color: #315baf;
+      }
+      .actions {
+        display: flex;
+        gap: 5px;
+        white-space: nowrap;
+      }
+      .actions button {
+        padding: 4px 8px;
+        font-size: 12px;
+      }
+      .danger {
+        color: #a93e31;
+      }
+      .empty {
+        padding: 44px 22px;
+        text-align: center;
+        color: var(--muted);
+      }
+      .empty strong {
+        display: block;
+        color: var(--ink);
+        font-size: 16px;
+        margin-bottom: 7px;
+      }
+      .pager {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 18px;
+        border-top: 1px solid var(--line);
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .pager button {
+        font-size: 12px;
+        padding: 5px 10px;
+      }
+      #notice {
+        padding: 10px 14px;
+        border-radius: 7px;
+        margin-bottom: 16px;
+        background: #eaf5ef;
+        color: #24664d;
+        white-space: pre-wrap;
+      }
+      #notice.error {
+        background: #fff0ed;
+        color: #a13826;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      .form-row {
+        display: grid;
+        gap: 6px;
+        margin-bottom: 16px;
+      }
+      label {
+        font-weight: 500;
+      }
+      dialog {
+        width: min(600px, 95vw);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 24px;
+        color: var(--ink);
+      }
+      dialog::backdrop {
+        background: #14243b66;
+      }
+      dialog h2 {
+        margin-bottom: 20px;
+      }
+      .dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 20px;
+      }
+      pre {
+        font:
+          13px/1.7 ui-monospace,
+          monospace;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        max-height: 55vh;
+        overflow: auto;
+      }
+      .qa-body {
+        padding: 22px;
+      }
+      .qa-body textarea {
+        width: 100%;
+        min-height: 100px;
+      }
+      .source {
+        border: 1px solid var(--line);
+        border-left: 3px solid #5a80df;
+        border-radius: 6px;
+        margin: 14px 0;
+        padding: 14px;
+      }
+      .source pre {
+        font: inherit;
+      }
+      .source small {
+        display: block;
+        overflow-wrap: anywhere;
+        color: var(--muted);
+      }
+      .file-hint {
+        padding: 0 18px 12px;
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .loading {
+        opacity: 0.6;
+      }
+      @media (max-width: 1000px) {
+        .shell {
+          grid-template-columns: 170px 1fr;
+        }
+        .content {
+          padding: 22px 18px;
+        }
+        .topbar {
+          padding: 12px 18px;
+          flex-wrap: wrap;
+        }
+        .grid {
+          grid-template-columns: 1fr;
+        }
+        .base-list {
+          display: flex;
+          gap: 6px;
+          max-height: none;
+          overflow: auto;
+        }
+        .base-card {
+          min-width: 190px;
+          max-width: 230px;
+        }
+        .sidebar {
+          padding: 22px 12px;
+        }
+      }
+      @media (max-width: 650px) {
+        .shell {
+          display: block;
+        }
+        .sidebar {
+          padding: 15px;
+          gap: 12px;
+        }
+        .nav {
+          display: flex;
+          overflow: auto;
+        }
+        .nav button {
+          white-space: nowrap;
+          padding: 7px 10px;
+        }
+        .brand small,
+        .side-note {
+          display: none;
+        }
+        .topbar {
+          display: block;
+        }
+        .connection {
+          margin-top: 10px;
+        }
+        .connection input {
+          width: 100%;
+          min-width: 80px;
+        }
+        .stats {
+          gap: 8px;
+        }
+        .stat {
+          padding: 12px;
+        }
+        .stat strong {
+          font-size: 23px;
+        }
+        .heading {
+          align-items: flex-start;
+        }
+        .content {
+          padding: 20px 12px;
+        }
+      }
+      .grid > .panel {
+        min-width: 0;
+      }
+      .panel-title > div {
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+      .heading > button,
+      .connection > button {
+        flex-shrink: 0;
+        white-space: nowrap;
+      }
+      .connection > label {
+        white-space: nowrap;
+      }
+      .content-dialog {
+        width: min(820px, 95vw);
+      }
+      .chunk {
+        padding: 12px 0;
+        border-top: 1px solid var(--line);
+      }
+      .chunk pre {
+        max-height: none;
+      }
+      .chunk small {
+        color: var(--muted);
+        overflow-wrap: anywhere;
+      }
+      .record-summary {
+        padding: 12px 0;
+        white-space: pre-wrap;
+      }
+      @media (max-width: 1000px) {
+        .grid {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+      .content-dialog {
+        width: min(1100px, 96vw);
+        max-height: 92vh;
+        overflow: auto;
+      }
+      .record-toolbar,
+      .record-tabs {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+        margin: 12px 0;
+      }
+      .record-tabs button.active {
+        background: #edf3ff;
+        color: #174ac1;
+        border-color: #bbcdf5;
+      }
+      #originalFrame {
+        width: 100%;
+        height: 560px;
+        border: 1px solid var(--line);
+        background: #f3f5f8;
+      }
+      .quality-warning {
+        background: #fff7e6;
+        color: #875b12;
+        border: 1px solid #eed5a4;
+      }
+      .record-toolbar input[type='file'] {
+        max-width: 250px;
+      }
+      .record-pane pre {
+        max-height: 60vh;
+      }
+      .chunk.selected {
+        background: #edf3ff;
+        border-radius: 7px;
+        padding: 12px;
+      }
+      .record-error {
+        color: #a13826;
+        white-space: pre-wrap;
+      }
+      .record-pane {
+        min-width: 0;
+      }
+      #recordFullText {
+        font:
+          14px/1.8 system-ui,
+          sans-serif;
+      }
+      .record-toolbar label {
+        font-weight: 400;
+      }
+      #originalPageImage {
+        width: 100%;
+        height: auto;
+        display: block;
+        border: 1px solid var(--line);
+      }
+      .business-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+      .business-grid .form-row {
+        margin: 0;
+      }
+      .business-panel {
+        padding: 20px;
+        margin-top: 20px;
+      }
+      .business-panel h2 {
+        margin-bottom: 14px;
+      }
+      .business-panel input,
+      .business-panel select {
+        max-width: 100%;
+        min-width: 0;
+      }
+      .business-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin: 14px 0;
+      }
+      .review-stale {
+        background: #fff7e6;
+        color: #875b12;
+      }
+      .check-item {
+        display: flex;
+        align-items: start;
+        gap: 9px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .check-item label {
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+      .check-item input {
+        margin-top: 5px;
+      }
+      .timeline {
+        border-left: 3px solid #cbdaf7;
+        padding-left: 16px;
+        margin: 16px 0;
+      }
+      .step-card {
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        margin: 12px 0;
+      }
+      .step-card textarea {
+        width: 100%;
+        min-height: 70px;
+      }
+      .report-sources .source {
+        margin: 10px 0;
+      }
+      .qa-turn {
+        border-top: 1px solid var(--line);
+        padding: 10px 0;
+      }
+      .qa-turn pre {
+        max-height: 180px;
+      }
+      .identity {
+        font-size: 12px;
+      }
+      .identity select {
+        padding: 5px;
+      }
+      .status-pill {
+        border-radius: 4px;
+        background: #edf3ff;
+        color: #315baf;
+        padding: 3px 8px;
+        font-size: 12px;
+      }
+      @media (max-width: 650px) {
+        .business-grid {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .business-panel {
+          padding: 14px;
+        }
+        .topbar > .identity {
+          margin-top: 10px;
+        }
+        .content-dialog {
+          padding: 16px;
+        }
+      }
+    </style>
+    <style>
+      .business-panel table {
+        min-width: 650px;
+      }
+      .business-panel td {
+        vertical-align: top;
+      }
+      .business-panel td:first-child {
+        min-width: 200px;
+        overflow-wrap: anywhere;
+      }
+      .business-panel td:last-child {
+        min-width: 150px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand">ContractOps<small>KNOWLEDGE & OPERATIONS</small></div>
+        <nav class="nav" aria-label="主导航">
+          <button class="active" data-view="knowledge">▣　知识库管理</button>
+          <button data-view="qa">⌕　知识问答</button>
+          <button data-view="contracts" id="navContracts" disabled title="连接后根据后端能力启用">
+            ▤　合同管理
+          </button>
+          <button data-view="approvals" id="navApprovals" disabled title="连接后根据后端能力启用">
+            ✓　审批中心
+          </button>
+        </nav>
+        <div class="side-note">
+          <p>统一工作台</p>
+          <p>所有数据来自当前连接的后端。<br />不使用模拟合同或审批数据。</p>
+        </div>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <span
+            ><i id="connectionDot" class="dot"></i
+            ><span id="connectionLabel">未连接后台</span></span
+          >
+          <label class="identity" id="localIdentityBar" hidden
+            >本地演示身份
+            <select id="localIdentity">
+              <option value="owner">经办人</option>
+              <option value="reviewer">审批人</option>
+            </select></label
+          >
+          <div class="connection">
+            <label for="token" class="muted">访问令牌</label
+            ><input
+              id="token"
+              type="password"
+              autocomplete="off"
+              placeholder="主后端 JWT / 本地临时令牌"
+            /><button id="connect" class="primary">连接后台</button>
+          </div>
+        </header>
+        <main class="content">
+          <div id="modeBanner" class="banner">
+            连接后显示实际存储模式。页面与主应用共用接口；令牌只保存在当前页面内存。
+          </div>
+          <div id="notice" role="status" aria-live="polite" hidden></div>
+          <section id="view-knowledge">
+            <div class="heading">
+              <div>
+                <h1>知识库管理</h1>
+                <p class="muted">组织合同、公司制度和标准模板，查看真实文档与处理状态。</p>
+              </div>
+              <button id="newBase" class="primary" disabled>＋ 新建知识库</button>
+            </div>
+            <div class="stats">
+              <div class="stat"><span>可访问知识库</span><strong id="baseCount">0</strong></div>
+              <div class="stat">
+                <span>当前库文档总数 · 含归档</span><strong id="documentCount">0</strong>
+              </div>
+              <div class="stat">
+                <span>当前筛选本页 · 可检索</span><strong id="readyCount">0</strong>
+              </div>
+            </div>
+            <div class="grid">
+              <section class="panel">
+                <div class="panel-title">
+                  <h2>我的知识库</h2>
+                  <button id="refresh" disabled>刷新</button>
+                </div>
+                <div id="bases" class="base-list"><div class="empty">请先连接后台。</div></div>
+              </section>
+              <section class="panel">
+                <div class="panel-title">
+                  <div>
+                    <h2 id="baseName">选择知识库</h2>
+                    <small id="baseDescription" class="muted">创建或选择知识库后管理文档。</small>
+                  </div>
+                </div>
+                <div class="upload-bar">
+                  <input
+                    id="files"
+                    type="file"
+                    multiple
+                    accept=".pdf,.docx"
+                    aria-label="选择文档"
+                  /><select id="uploadType" aria-label="上传文档分类">
+                    <option value="CONTRACT">合同资料</option>
+                    <option value="POLICY">公司制度</option>
+                    <option value="TEMPLATE">标准模板</option></select
+                  ><button id="upload" class="primary" disabled>上传文档</button>
+                </div>
+                <div class="file-hint" id="engineHint">
+                  支持 PDF、DOCX，单文件 ≤ 5 MiB。连接后显示解析引擎配置；OCR 状态以每份结果为准。
+                </div>
+                <form id="filterForm" class="filters">
+                  <input
+                    id="documentQuery"
+                    maxlength="200"
+                    placeholder="搜索文件名"
+                    aria-label="搜索文件名"
+                  /><select id="typeFilter" aria-label="分类筛选">
+                    <option value="">全部分类</option>
+                    <option value="CONTRACT">合同资料</option>
+                    <option value="POLICY">公司制度</option>
+                    <option value="TEMPLATE">标准模板</option></select
+                  ><select id="statusFilter" aria-label="状态筛选">
+                    <option value="">全部状态</option>
+                    <option value="READY">解析完成</option>
+                    <option value="PARSING">处理中</option>
+                    <option value="FAILED">解析失败</option>
+                    <option value="ARCHIVED">已归档</option></select
+                  ><button id="filter" disabled>筛选</button>
+                </form>
+                <div class="table-scroll">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>文档</th>
+                        <th>分类</th>
+                        <th>状态</th>
+                        <th>片段</th>
+                        <th>更新时间</th>
+                        <th>操作</th>
+                      </tr>
+                    </thead>
+                    <tbody id="documentRows">
+                      <tr>
+                        <td colspan="6">
+                          <div class="empty">
+                            <strong>尚未选择知识库</strong>连接后创建一个知识库开始使用。
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="pager">
+                  <span id="pageLabel">暂无文档</span>
+                  <div>
+                    <button id="previous" disabled>上一页</button
+                    ><button id="next" disabled>下一页</button>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </section>
+          <section id="view-qa" hidden>
+            <div class="heading">
+              <div>
+                <h1>知识问答</h1>
+                <p class="muted" id="qaModelHint">
+                  先检索有权限的资料，再由已配置模型组织回答；失败时明确降级。
+                </p>
+              </div>
+              <button id="newConversation">新会话</button>
+            </div>
+            <section class="panel qa-body">
+              <div class="business-grid">
+                <div class="form-row">
+                  <label for="qaBase">知识库范围</label
+                  ><select id="qaBase">
+                    <option value="">全部可访问资料</option>
+                  </select>
+                </div>
+                <div class="form-row">
+                  <label for="qaDocument">文档范围</label
+                  ><select id="qaDocument">
+                    <option value="">范围内全部资料</option>
+                  </select>
+                </div>
+              </div>
+              <p class="muted" id="qaScopeHint">每轮重新鉴权检索，历史问题仅用于理解追问。</p>
+              <div id="qaHistory"></div>
+              <div class="form-row">
+                <label for="question">问题或追问</label
+                ><textarea
+                  id="question"
+                  maxlength="300"
+                  placeholder="例如：付款期限是什么？ / 那交付期限呢？"
+                ></textarea>
+              </div>
+              <button id="ask" class="primary" disabled>提问并查看依据</button>
+              <p id="qaMode" role="status"></p>
+              <pre id="answer"></pre>
+              <div id="sources"></div>
+            </section>
+          </section>
+          <section id="view-contracts" hidden>
+            <div class="heading">
+              <div>
+                <h1>合同工作台</h1>
+                <p class="muted">直接关联知识库原件与版本，核对候选，预审后提交人工审批。</p>
+              </div>
+              <button id="refreshContracts">刷新台账</button>
+            </div>
+            <details class="panel business-panel" id="createContractPanel">
+              <summary>＋ 创建合同台账并关联资料</summary>
+              <form id="createContractForm">
+                <div class="business-grid" style="margin-top: 16px">
+                  <div class="form-row">
+                    <label for="contractTitle">合同名称</label
+                    ><input id="contractTitle" required maxlength="300" />
+                  </div>
+                  <div class="form-row">
+                    <label for="contractParty">交易对方</label
+                    ><input id="contractParty" maxlength="300" />
+                  </div>
+                  <div class="form-row">
+                    <label for="contractAmount">金额（人工填写，可留空）</label
+                    ><input id="contractAmount" type="number" min="0" step="0.01" />
+                  </div>
+                  <div class="form-row">
+                    <label for="contractCurrency">币种</label
+                    ><input id="contractCurrency" value="CNY" maxlength="3" pattern="[A-Za-z]{3}" />
+                  </div>
+                  <div class="form-row">
+                    <label for="contractDepartment">部门 ID</label
+                    ><input id="contractDepartment" required />
+                  </div>
+                  <div class="form-row">
+                    <label for="newContractDocument">关联已入库合同资料（不重复上传）</label
+                    ><select id="newContractDocument" required></select>
+                  </div>
+                  <div class="form-row">
+                    <label for="contractFrom">有效期起（可选）</label
+                    ><input id="contractFrom" type="date" />
+                  </div>
+                  <div class="form-row">
+                    <label for="contractUntil">有效期止（可选）</label
+                    ><input id="contractUntil" type="date" />
+                  </div>
+                </div>
+                <div class="business-actions">
+                  <button id="createContract" class="primary business-action">创建并关联</button>
+                </div>
+              </form>
+            </details>
+            <section class="panel business-panel">
+              <div class="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>合同 / 对方</th>
+                      <th>金额</th>
+                      <th>当前版本</th>
+                      <th>状态</th>
+                      <th>操作</th>
+                    </tr>
+                  </thead>
+                  <tbody id="contractRows"></tbody>
+                </table>
+              </div>
+              <div class="business-actions">
+                <button id="contractsPrevious">上一页</button
+                ><button id="contractsNext">下一页</button
+                ><span id="contractsPage" class="muted"></span>
+              </div>
+            </section>
+            <section class="panel business-panel" id="businessDetail" hidden>
+              <h2 id="businessTitle"></h2>
+              <p id="businessSummary"></p>
+              <p id="businessIdentity" class="muted"></p>
+              <div class="business-actions">
+                <button id="openContractSource">查看关联原文</button
+                ><button id="compareContract">对比最近两个合同版本</button>
+              </div>
+              <div id="bindingBar" class="business-actions">
+                <select id="revisionDocument" aria-label="选择修订后的知识库合同文档"></select
+                ><button id="bindContractRevision" class="business-action">关联为新合同版本</button>
+              </div>
+              <h2>金额 / 日期候选核对</h2>
+              <p class="muted">复用确定性规则；候选不自动成为业务事实。台账字段由人填写。</p>
+              <div id="contractCandidates"></div>
+              <button id="confirmCandidates" class="business-action">保存已核对标记</button>
+              <div id="contractDiff"></div>
+              <h2 style="margin-top: 24px">审批预审助手</h2>
+              <p class="muted">
+                选择待参考的制度库；关键词对应不是制度适用性或违规判断，预审不能自动审批。
+              </p>
+              <div class="business-actions">
+                <select id="reviewBase" aria-label="选择制度知识库"></select
+                ><button id="generateReview" class="business-action">生成 / 刷新预审</button
+                ><button id="submitContract" class="primary business-action">提交人工审批</button>
+              </div>
+              <div id="reviewReport"></div>
+              <h2 style="margin-top: 24px">审批过程与操作</h2>
+              <div id="contractApprovals"></div>
+            </section>
+            <form id="contractForm" hidden><input id="contractId" /><button>查询合同</button></form>
+            <pre id="contractResult" hidden></pre>
+          </section>
+          <section id="view-approvals" hidden>
+            <div class="heading">
+              <div>
+                <h1>审批中心</h1>
+                <p class="muted">先查看合同、预审和原文依据，再由人领取任务并决定。</p>
+              </div>
+              <button id="loadTasks">刷新</button>
+            </div>
+            <section class="panel business-panel">
+              <div class="business-actions">
+                <select id="approvalFilter" aria-label="审批列表范围">
+                  <option value="pending">我的待办</option>
+                  <option value="handled">我的已办</option>
+                  <option value="all">可访问审批过程</option>
+                </select>
+              </div>
+              <div id="approvalRows"></div>
+              <pre id="approvalResult" hidden></pre>
+            </section>
+          </section>
+        </main>
+      </div>
+    </div>
+    <dialog id="baseDialog">
+      <form id="baseForm">
+        <h2>新建知识库</h2>
+        <div class="form-row">
+          <label for="newBaseName">知识库名称</label
+          ><input id="newBaseName" required maxlength="100" placeholder="例如：采购合同与制度" />
+        </div>
+        <div class="form-row">
+          <label for="newBaseDescription">说明</label
+          ><textarea
+            id="newBaseDescription"
+            rows="4"
+            maxlength="2000"
+            placeholder="说明资料用途、适用范围等"
+          ></textarea>
+        </div>
+        <div class="dialog-actions">
+          <button type="button" id="cancelBase">取消</button
+          ><button class="primary" id="saveBase">创建知识库</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="recordDialog" class="content-dialog">
+      <h2 id="recordTitle">文档详情</h2>
+      <div id="recordSummary" class="record-summary"></div>
+      <div class="record-toolbar">
+        <label for="recordVersions">文档版本</label
+        ><select id="recordVersions"></select
+        ><span id="processingState" class="muted"></span
+        ><button id="syncRecord">同步解析进度</button>
+      </div>
+      <div id="qualitySummary" class="banner"></div>
+      <div id="recordError" class="record-error" role="status"></div>
+      <div class="record-tabs">
+        <button data-record-tab="chunks" class="active">分块与来源</button
+        ><button data-record-tab="text">完整正文</button
+        ><button data-record-tab="original">原始 PDF</button
+        ><button data-record-tab="tables">表格与质量</button>
+      </div>
+      <section id="record-pane-chunks" class="record-pane">
+        <div id="recordChunks"></div>
+        <div class="pager">
+          <span id="chunkPageLabel"></span>
+          <div>
+            <button id="chunkPrevious">上一页</button><button id="chunkNext">下一页</button>
+          </div>
+        </div>
+      </section>
+      <section id="record-pane-text" class="record-pane" hidden>
+        <p class="muted">完整解析正文；版面请对照原始 PDF，合并来源片段不等于逐页复刻。</p>
+        <pre id="recordFullText"></pre>
+      </section>
+      <section id="record-pane-original" class="record-pane" hidden>
+        <div class="record-toolbar">
+          <label for="previewPage">页码</label
+          ><input
+            id="previewPage"
+            type="number"
+            min="1"
+            max="2000"
+            value="1"
+            style="width: 90px"
+          /><button id="goPreviewPage">定位页面</button><span id="previewHint" class="muted"></span>
+        </div>
+        <img id="originalPageImage" alt="原始 PDF 的当前页" hidden /><iframe
+          id="originalFrame"
+          title="鉴权后的原始 PDF 预览"
+          referrerpolicy="no-referrer"
+          hidden
+        ></iframe>
+      </section>
+      <section id="record-pane-tables" class="record-pane" hidden>
+        <pre id="recordTables"></pre>
+      </section>
+      <details>
+        <summary>技术元数据</summary>
+        <pre id="record"></pre>
+      </details>
+      <div class="record-toolbar" id="versionUploadBar">
+        <label for="versionFile">上传修订版本</label
+        ><input id="versionFile" type="file" accept=".pdf,.docx" /><button id="uploadVersion">
+          保存新版本
+        </button>
+      </div>
+      <div class="dialog-actions"><button id="closeRecord">关闭</button></div>
+    </dialog>
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const labels = {
+        CONTRACT: '合同资料',
+        POLICY: '公司制度',
+        TEMPLATE: '标准模板',
+        PARSING: '处理中',
+        READY: '解析完成',
+        FAILED: '解析失败',
+        ARCHIVED: '已归档',
+      };
+      const state = {
+        prefix: '/v1',
+        connected: false,
+        session: null,
+        bases: [],
+        base: null,
+        docs: [],
+        offset: 0,
+        epoch: 0,
+        sequence: 0,
+        busy: false,
+        controller: new AbortController(),
+      };
+      const recordState = {
+        document: null,
+        offset: 0,
+        count: 0,
+        blobUrl: null,
+        tab: 'chunks',
+        selectedChunk: null,
+      };
+      const configReady = fetch('/workspace/config', { cache: 'no-store' }).then(
+        async (response) => {
+          if (!response.ok) throw new Error('后端配置读取失败');
+          const config = await response.json();
+          state.prefix = config.api_prefix;
+        },
+      );
+      configReady.catch((error) => notify(error.message, true));
+      function text(tag, value, className) {
+        const node = document.createElement(tag);
+        node.textContent = value;
+        if (className) node.className = className;
+        return node;
+      }
+      function notify(message, error = false) {
+        $('notice').hidden = false;
+        $('notice').className = error ? 'error' : '';
+        $('notice').textContent = message;
+      }
+      function date(value) {
+        return new Date(value).toLocaleString('zh-CN', { hour12: false });
+      }
+      function writer() {
+        return state.session?.roles.some(
+          (role) => role === 'CONTRACT_OWNER' || role === 'TENANT_ADMIN',
+        );
+      }
+      function controls() {
+        for (const id of [
+          'localIdentity',
+          'qaBase',
+          'qaDocument',
+          'approvalFilter',
+          'reviewBase',
+          'revisionDocument',
+        ])
+          $(id).disabled = state.busy || !state.connected;
+        $('newBase').disabled = state.busy || !state.connected || !writer();
+        $('refresh').disabled = state.busy || !state.connected;
+        $('upload').disabled = state.busy || !state.base || !writer();
+        $('filter').disabled = state.busy || !state.base;
+        $('ask').disabled = state.busy || !state.connected;
+        $('previous').disabled = state.busy || state.offset === 0;
+        $('next').disabled = state.busy || state.docs.length < 20;
+        $('connect').disabled = state.busy;
+        $('saveBase').disabled = state.busy;
+        $('chunkPrevious').disabled = state.busy || recordState.offset === 0;
+        $('chunkNext').disabled = state.busy || recordState.count < 20;
+        $('recordVersions').disabled = state.busy;
+        $('uploadVersion').disabled = state.busy || !recordState.document?.can_upload_version;
+        $('syncRecord').disabled =
+          state.busy ||
+          !writer() ||
+          !state.session?.inspector_configured ||
+          recordState.document?.status !== 'PARSING';
+        document
+          .querySelectorAll('[data-record-tab]')
+          .forEach((button) => (button.disabled = state.busy));
+        document
+          .querySelectorAll('.row-action,.base-card')
+          .forEach((button) => (button.disabled = state.busy));
+      }
+      async function api(path, options = {}, root = false) {
+        await configReady;
+        const epoch = state.epoch;
+        const response = await fetch((root ? '' : state.prefix) + path, {
+          ...options,
+          headers: { ...options.headers, Authorization: 'Bearer ' + $('token').value.trim() },
+          cache: 'no-store',
+          signal: state.controller.signal,
+        });
+        const data = await response.json();
+        if (epoch !== state.epoch) throw new Error('身份已变化，请重新连接');
+        if (!response.ok) throw new Error(data.error?.message || '后台请求失败');
+        return data;
+      }
+      async function run(action) {
+        if (state.busy) return;
+        state.busy = true;
+        controls();
+        try {
+          await action();
+        } catch (error) {
+          if (error.name !== 'AbortError') notify(error.message, true);
+        } finally {
+          state.busy = false;
+          controls();
+        }
+      }
+      async function recordRun(action) {
+        return run(async () => {
+          try {
+            $('recordError').textContent = '';
+            await action();
+          } catch (error) {
+            $('recordError').textContent = error.message;
+            throw error;
+          }
+        });
+      }
+      function releasePreview() {
+        if (recordState.blobUrl) URL.revokeObjectURL(recordState.blobUrl);
+        recordState.blobUrl = null;
+        $('originalFrame').removeAttribute('src');
+        $('originalFrame').hidden = true;
+        $('originalPageImage').removeAttribute('src');
+        $('originalPageImage').hidden = true;
+      }
+      async function raw(path) {
+        await configReady;
+        const epoch = state.epoch;
+        const response = await fetch(state.prefix + path, {
+          headers: { Authorization: 'Bearer ' + $('token').value.trim() },
+          cache: 'no-store',
+          signal: state.controller.signal,
+        });
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error?.message || '读取失败');
+        }
+        const bytes = await response.arrayBuffer();
+        if (epoch !== state.epoch) throw new Error('身份已变化');
+        return bytes;
+      }
+      function reset() {
+        state.controller.abort();
+        state.controller = new AbortController();
+        state.epoch++;
+        state.connected = false;
+        state.session = null;
+        state.bases = [];
+        state.base = null;
+        state.docs = [];
+        state.offset = 0;
+        state.sequence++;
+        $('connectionDot').className = 'dot';
+        $('connectionLabel').textContent = '未连接后台';
+        $('modeBanner').textContent = '请使用当前后台的访问令牌连接。';
+        $('notice').hidden = true;
+        $('baseCount').textContent = '0';
+        $('documentCount').textContent = '0';
+        $('readyCount').textContent = '0';
+        $('bases').replaceChildren(text('div', '请先连接后台。', 'empty'));
+        $('qaBase').replaceChildren(new Option('全部可访问资料', ''));
+        $('answer').textContent = '';
+        $('sources').replaceChildren();
+        $('record').textContent = '';
+        $('recordDialog').close();
+        $('baseDialog').close();
+        releasePreview();
+        recordState.document = null;
+        recordState.offset = 0;
+        recordState.count = 0;
+        $('recordChunks').replaceChildren();
+        $('recordSummary').textContent = '';
+        $('recordFullText').textContent = '';
+        $('recordTables').textContent = '';
+        $('recordVersions').replaceChildren();
+        $('versionFile').value = '';
+        $('contractResult').textContent = '尚未查询合同。';
+        $('approvalResult').textContent = '尚未加载待办。';
+        $('navContracts').disabled = true;
+        $('navApprovals').disabled = true;
+        document.dispatchEvent(new Event('workspace-reset'));
+        renderDocuments();
+        showView('knowledge');
+        controls();
+      }
+      function showView(name) {
+        document
+          .querySelectorAll('main>section')
+          .forEach((section) => (section.hidden = section.id !== 'view-' + name));
+        document
+          .querySelectorAll('[data-view]')
+          .forEach((button) => button.classList.toggle('active', button.dataset.view === name));
+      }
+      function renderBases() {
+        $('baseCount').textContent = state.bases.length;
+        $('bases').replaceChildren();
+        const qaValue = $('qaBase').value;
+        $('qaBase').replaceChildren(new Option('全部可访问资料', ''));
+        for (const base of state.bases) {
+          const button = document.createElement('button');
+          button.className = 'base-card' + (base.id === state.base?.id ? ' active' : '');
+          button.append(
+            text('strong', base.name),
+            text('small', base.description || '暂无说明'),
+            text('small', base.document_count + ' 份文档'),
+          );
+          button.onclick = () =>
+            run(async () => {
+              state.base = base;
+              state.offset = 0;
+              renderBases();
+              await loadDocuments();
+            });
+          $('bases').append(button);
+          $('qaBase').append(new Option(base.name, base.id));
+        }
+        if (state.bases.some((base) => base.id === qaValue)) $('qaBase').value = qaValue;
+        if (!state.bases.length)
+          $('bases').append(text('div', '还没有可访问的知识库。点击“新建知识库”开始。', 'empty'));
+        $('documentCount').textContent = state.base?.document_count || 0;
+      }
+      async function refreshBases(preferred) {
+        const bases = await api('/knowledge/bases');
+        state.bases = bases;
+        state.base =
+          bases.find((base) => base.id === (preferred || state.base?.id)) || bases[0] || null;
+        renderBases();
+        await loadDocuments();
+      }
+      async function loadDocuments() {
+        if (!state.base) {
+          state.docs = [];
+          renderDocuments();
+          return;
+        }
+        const baseId = state.base.id,
+          sequence = ++state.sequence;
+        const query = new URLSearchParams({
+          query: $('documentQuery').value,
+          limit: '20',
+          offset: String(state.offset),
+        });
+        if ($('typeFilter').value) query.set('document_type', $('typeFilter').value);
+        if ($('statusFilter').value) query.set('status', $('statusFilter').value);
+        const docs = await api('/knowledge/bases/' + baseId + '/documents?' + query);
+        if (sequence !== state.sequence || baseId !== state.base?.id) return;
+        state.docs = docs;
+        renderDocuments();
+      }
+      function renderDocuments() {
+        $('baseName').textContent = state.base?.name || '选择知识库';
+        $('baseDescription').textContent =
+          state.base?.description || '创建或选择知识库后管理文档。';
+        $('readyCount').textContent = state.docs.filter((doc) => doc.searchable).length;
+        $('documentRows').replaceChildren();
+        for (const doc of state.docs) {
+          const row = document.createElement('tr'),
+            name = text('td', doc.file_name, 'filename');
+          name.append(
+            text(
+              'small',
+              (doc.media_type === 'application/pdf' ? 'PDF' : 'DOCX') +
+                ' · ' +
+                (doc.size_bytes / 1024).toFixed(1) +
+                ' KiB',
+            ),
+          );
+          const category = text('td', labels[doc.document_type]),
+            status = document.createElement('td');
+          status.append(text('span', labels[doc.status] || doc.status, 'badge ' + doc.status));
+          if (doc.error_message) status.append(text('small', doc.error_message));
+          if (!doc.original_available) status.append(text('small', '旧数据：未保留原件'));
+          const actions = document.createElement('td'),
+            group = document.createElement('div');
+          group.className = 'actions';
+          const record = text('button', '查看内容', 'row-action');
+          record.onclick = () => recordRun(() => openRecord(doc.id));
+          group.append(record);
+          if (doc.can_retry) {
+            const retry = text('button', '重试', 'row-action');
+            retry.onclick = () => changeDocument(doc, 'retry');
+            group.append(retry);
+          }
+          if (doc.can_archive) {
+            const archive = text('button', '归档', 'row-action danger');
+            archive.onclick = () => {
+              if (confirm('归档后该文档不会参与检索。原件与记录仍然保留，确认归档？'))
+                changeDocument(doc, 'archive');
+            };
+            group.append(archive);
+          }
+          actions.append(group);
+          row.append(
+            name,
+            category,
+            status,
+            text('td', String(doc.chunk_count)),
+            text('td', date(doc.updated_at)),
+            actions,
+          );
+          $('documentRows').append(row);
+        }
+        if (!state.docs.length) {
+          const row = document.createElement('tr'),
+            cell = document.createElement('td');
+          cell.colSpan = 6;
+          const empty = text('div', '', 'empty');
+          empty.append(
+            text('strong', state.base ? '当前没有匹配的文档' : '尚未选择知识库'),
+            text(
+              'span',
+              state.base ? '上传文档，或调整搜索和筛选条件。' : '连接后创建一个知识库开始使用。',
+            ),
+          );
+          cell.append(empty);
+          row.append(cell);
+          $('documentRows').append(row);
+        }
+        $('pageLabel').textContent = state.base
+          ? '第 ' + (state.offset / 20 + 1) + ' 页 · 本页 ' + state.docs.length + ' 项'
+          : '暂无文档';
+        controls();
+      }
+      async function loadChunks() {
+        if (!recordState.document) return;
+        const chunks = await api(
+          '/knowledge/documents/' +
+            recordState.document.id +
+            '/chunks?limit=20&offset=' +
+            recordState.offset,
+        );
+        recordState.count = chunks.length;
+        $('recordChunks').replaceChildren();
+        for (const chunk of chunks) {
+          const box = text(
+            'section',
+            '',
+            'chunk' + (chunk.id === recordState.selectedChunk ? ' selected' : ''),
+          );
+          box.id = 'chunk-' + chunk.id;
+          box.append(
+            text(
+              'strong',
+              '片段 ' +
+                (chunk.sequence + 1) +
+                ' · ' +
+                (chunk.kind === 'table' ? '表格 · ' : '') +
+                (chunk.page_number === null
+                  ? 'DOCX 标题：' + (chunk.heading_path.join(' / ') || '正文')
+                  : 'PDF 来源页 ' +
+                    (chunk.source_pages.length
+                      ? chunk.source_pages.join('、')
+                      : chunk.page_number)),
+            ),
+            text('pre', chunk.content),
+            text('small', 'SHA-256 ' + chunk.content_hash),
+          );
+          if (recordState.document.media_type === 'application/pdf') {
+            for (const page of (chunk.source_pages.length
+              ? chunk.source_pages
+              : [chunk.page_number]
+            ).filter(Boolean)) {
+              const button = text('button', '查看第 ' + page + ' 页原件');
+              button.onclick = () =>
+                recordRun(async () => {
+                  $('previewPage').value = page;
+                  await recordTab('original');
+                });
+              box.append(button);
+            }
+          }
+          $('recordChunks').append(box);
+        }
+        if (!chunks.length)
+          $('recordChunks').append(
+            text(
+              'p',
+              '没有解析正文。失败文档请查看原因后重试；扫描 PDF 需要后续接入 OCR。',
+              'muted',
+            ),
+          );
+        $('chunkPageLabel').textContent =
+          '第 ' + (recordState.offset / 20 + 1) + ' 页 · 本页 ' + chunks.length + ' 个片段';
+      }
+      $('chunkPrevious').onclick = () =>
+        recordRun(async () => {
+          recordState.offset = Math.max(0, recordState.offset - 20);
+          await loadChunks();
+        });
+      $('chunkNext').onclick = () =>
+        recordRun(async () => {
+          recordState.offset += 20;
+          await loadChunks();
+        });
+      async function openRecord(id, source = null) {
+        releasePreview();
+        const doc = await api('/knowledge/documents/' + id);
+        if (source && doc.version_id !== source.version_id) throw new Error('引用版本不匹配');
+        recordState.document = doc;
+        recordState.offset = source ? Math.floor(source.sequence / 20) * 20 : 0;
+        recordState.selectedChunk = source?.chunk_id || null;
+        $('recordError').textContent = '';
+        $('record').textContent = JSON.stringify(doc, null, 2);
+        $('recordTitle').textContent = doc.file_name;
+        $('recordSummary').textContent =
+          'v' +
+          doc.version_number +
+          ' · ' +
+          (doc.is_current ? '当前版本' : '历史版本 · 不参与当前检索') +
+          ' · ' +
+          labels[doc.document_type] +
+          ' · ' +
+          labels[doc.status] +
+          ' · ' +
+          doc.chunk_count +
+          ' 个片段' +
+          (doc.error_message ? '\n' + doc.error_message : '');
+        const versions = await api('/knowledge/documents/' + id + '/versions');
+        $('recordVersions').replaceChildren(
+          ...versions.map(
+            (version) =>
+              new Option(
+                'v' +
+                  version.version_number +
+                  ' · ' +
+                  (version.is_current ? '当前' : '历史') +
+                  ' · ' +
+                  labels[version.status],
+                version.id,
+              ),
+          ),
+        );
+        $('recordVersions').value = doc.id;
+        const processing = await api('/knowledge/documents/' + id + '/processing');
+        $('processingState').textContent =
+          (processing.engine === 'PDF_INSPECTOR' ? 'Inspector' : '基础解析') +
+          ' · ' +
+          processing.status +
+          ' · ' +
+          processing.progress +
+          '%' +
+          (processing.error_code ? ' · ' + processing.error_code : '');
+        const details = doc.parse_details || {};
+        const review = details.quality_status === 'NEEDS_REVIEW';
+        $('qualitySummary').className = 'banner' + (review ? ' quality-warning' : '');
+        $('qualitySummary').textContent = review
+          ? '需要人工检查：可能有未识别页面、OCR 或表格质量问题。'
+          : details.quality_status === 'READY'
+            ? 'Inspector 已完成配置内的检查；不代表合同内容已合规。'
+            : '质量未评估 / 处理中。基础解析不包含 OCR 或完整质量检查。';
+        const ocr = details.ocr || {};
+        $('qualitySummary').textContent +=
+          ' OCR：' +
+          (ocr.provider || '未启用') +
+          (ocr.unresolved_pages?.length ? '；未解决页：' + ocr.unresolved_pages.join('、') : '');
+        $('recordTables').textContent = JSON.stringify(
+          {
+            document: details.document || {},
+            tables: details.tables || {},
+            chunk_quality: details.chunk_quality || {},
+            ocr: details.ocr || {},
+            issues: details.issues || [],
+          },
+          null,
+          2,
+        );
+        $('versionUploadBar').hidden = !doc.can_upload_version;
+        $('previewPage').value = source?.page_number || 1;
+        await recordTab('chunks');
+        if (!$('recordDialog').open) $('recordDialog').showModal();
+        if (recordState.selectedChunk)
+          requestAnimationFrame(() =>
+            $('chunk-' + recordState.selectedChunk)?.scrollIntoView({ block: 'center' }),
+          );
+      }
+      async function recordTab(tab) {
+        recordState.tab = tab;
+        document
+          .querySelectorAll('.record-pane')
+          .forEach((pane) => (pane.hidden = pane.id !== 'record-pane-' + tab));
+        document
+          .querySelectorAll('[data-record-tab]')
+          .forEach((button) => button.classList.toggle('active', button.dataset.recordTab === tab));
+        const doc = recordState.document;
+        if (!doc) return;
+        if (tab === 'chunks') await loadChunks();
+        if (tab === 'text')
+          $('recordFullText').textContent = new TextDecoder().decode(
+            await raw('/knowledge/documents/' + doc.id + '/text'),
+          );
+        if (tab === 'original') {
+          $('previewHint').textContent =
+            doc.media_type === 'application/pdf'
+              ? '浏览器原生 PDF 预览；若设备不支持，请用支持 PDF 的桌面浏览器。'
+              : 'DOCX 未转换为 PDF，请查看完整正文。';
+          if (doc.media_type !== 'application/pdf') {
+            releasePreview();
+            return;
+          }
+          if (!doc.original_available) throw new Error('该旧记录未保留原件。');
+          const page = Number($('previewPage').value);
+          if (!Number.isInteger(page) || page < 1 || page > 2000)
+            throw new Error('页码须为1至2000');
+          if (doc.parse_details?.engine === 'PDF_INSPECTOR') {
+            releasePreview();
+            recordState.blobUrl = URL.createObjectURL(
+              new Blob([await raw('/knowledge/documents/' + doc.id + '/pages/' + page + '.png')], {
+                type: 'image/png',
+              }),
+            );
+            $('originalPageImage').src = recordState.blobUrl;
+            $('originalPageImage').hidden = false;
+            $('previewHint').textContent = 'Inspector 从本版本原件渲染的页面，不是解析文本重排。';
+          } else {
+            if (!recordState.blobUrl)
+              recordState.blobUrl = URL.createObjectURL(
+                new Blob([await raw('/knowledge/documents/' + doc.id + '/original')], {
+                  type: 'application/pdf',
+                }),
+              );
+            $('originalFrame').src = recordState.blobUrl + '#page=' + page;
+            $('originalFrame').hidden = false;
+          }
+        }
+      }
+      document
+        .querySelectorAll('[data-record-tab]')
+        .forEach(
+          (button) => (button.onclick = () => recordRun(() => recordTab(button.dataset.recordTab))),
+        );
+      $('recordVersions').onchange = () => recordRun(() => openRecord($('recordVersions').value));
+      $('goPreviewPage').onclick = () => recordRun(() => recordTab('original'));
+      $('syncRecord').onclick = () =>
+        recordRun(async () => {
+          const doc = recordState.document;
+          await api('/knowledge/documents/' + doc.id + ':sync', { method: 'POST' });
+          await openRecord(doc.id);
+          await refreshBases();
+        });
+      $('uploadVersion').onclick = () =>
+        recordRun(async () => {
+          const file = $('versionFile').files[0],
+            doc = recordState.document;
+          if (!file) throw new Error('请选择修订文件');
+          if (file.size > 5 * 1024 * 1024) throw new Error('单文件最多5 MiB');
+          const type = file.name.toLowerCase().endsWith('.pdf')
+            ? 'application/pdf'
+            : file.name.toLowerCase().endsWith('.docx')
+              ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+              : null;
+          if (!type) throw new Error('只支持PDF/DOCX');
+          const query = new URLSearchParams({
+            expected_version: doc.state_version,
+            file_name: file.name,
+            media_type: type,
+          });
+          const updated = await api('/knowledge/documents/' + doc.id + '/versions?' + query, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/octet-stream' },
+            body: file,
+          });
+          $('versionFile').value = '';
+          await openRecord(updated.id);
+          await refreshBases();
+          $('answer').textContent = '';
+          $('sources').replaceChildren();
+        });
+      async function changeDocument(doc, action) {
+        return run(async () => {
+          const updated = await api('/knowledge/documents/' + doc.id + ':' + action, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ expected_version: doc.state_version }),
+          });
+          await refreshBases();
+          $('answer').textContent = '';
+          $('sources').replaceChildren();
+          notify(
+            action === 'archive'
+              ? '文档已归档，已从检索中排除。'
+              : updated.status === 'FAILED'
+                ? '重试完成，但仍解析失败。'
+                : '重试成功。',
+            updated.status === 'FAILED',
+          );
+        });
+      }
+      $('connect').onclick = () =>
+        run(async () => {
+          reset();
+          if (!$('token').value.trim()) throw new Error('请先填写访问令牌');
+          state.session = await api('/workspace/session', {}, true);
+          state.connected = true;
+          $('connectionDot').className = 'dot ok';
+          $('connectionLabel').textContent =
+            state.session.mode === 'LOCAL_SQLITE'
+              ? '已连接 · 本地 SQLite'
+              : '已连接 · 主后端 PostgreSQL';
+          $('modeBanner').textContent = state.session.message;
+          $('navContracts').disabled = !state.session.capabilities.contracts;
+          $('navApprovals').disabled = !state.session.capabilities.approvals;
+          $('navContracts').title = state.session.capabilities.contracts
+            ? '读取真实合同'
+            : '本地模式不可用，需要 PostgreSQL';
+          $('navApprovals').title = state.session.capabilities.approvals
+            ? '读取真实审批待办'
+            : '本地模式不可用，需要 PostgreSQL';
+          $('engineHint').textContent = state.session.inspector_configured
+            ? 'PDF → PDF Inspector 异步任务；DOCX → 基础解析。单文件 ≤ 5 MiB；OCR 按结果显示。'
+            : 'PDF / DOCX → 基础解析；Inspector 未配置，OCR 未启用。单文件 ≤ 5 MiB。';
+          await refreshBases();
+          notify('连接成功，页面展示当前身份可访问的实际数据。');
+        });
+      $('token').addEventListener('input', reset);
+      document
+        .querySelectorAll('[data-view]')
+        .forEach((button) => (button.onclick = () => showView(button.dataset.view)));
+      $('newBase').onclick = () => {
+        $('baseForm').reset();
+        $('baseDialog').showModal();
+      };
+      $('cancelBase').onclick = () => $('baseDialog').close();
+      $('closeRecord').onclick = () => $('recordDialog').close();
+      $('recordDialog').addEventListener('close', releasePreview);
+      $('baseForm').onsubmit = (event) => {
+        event.preventDefault();
+        run(async () => {
+          const base = await api('/knowledge/bases', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: $('newBaseName').value,
+              description: $('newBaseDescription').value,
+            }),
+          });
+          $('baseDialog').close();
+          state.offset = 0;
+          await refreshBases(base.id);
+          notify('知识库已创建。');
+        });
+      };
+      $('refresh').onclick = () => run(() => refreshBases());
+      $('filterForm').onsubmit = (event) => {
+        event.preventDefault();
+        run(async () => {
+          state.offset = 0;
+          await loadDocuments();
+        });
+      };
+      $('previous').onclick = () =>
+        run(async () => {
+          state.offset = Math.max(0, state.offset - 20);
+          await loadDocuments();
+        });
+      $('next').onclick = () =>
+        run(async () => {
+          state.offset += 20;
+          await loadDocuments();
+        });
+      $('upload').onclick = () =>
+        run(async () => {
+          if (!state.base) throw new Error('请先选择知识库');
+          const files = Array.from($('files').files);
+          if (!files.length) throw new Error('请先选择文件');
+          let ready = 0,
+            failed = 0,
+            pending = 0;
+          const errors = [];
+          for (const file of files) {
+            notify('正在上传并解析：' + file.name);
+            const name = file.name.toLowerCase(),
+              type = name.endsWith('.pdf')
+                ? 'application/pdf'
+                : name.endsWith('.docx')
+                  ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                  : null;
+            if (!type || file.size > 5 * 1024 * 1024) {
+              failed++;
+              errors.push(file.name + '：只支持 5 MiB 以内 PDF/DOCX');
+              continue;
+            }
+            const query = new URLSearchParams({
+              file_name: file.name,
+              media_type: type,
+              document_type: $('uploadType').value,
+            });
+            try {
+              const doc = await api('/knowledge/bases/' + state.base.id + '/documents?' + query, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/octet-stream' },
+                body: file,
+              });
+              if (doc.status === 'READY') ready++;
+              else if (doc.status === 'PARSING') pending++;
+              else {
+                failed++;
+                errors.push(file.name + '：' + (doc.error_message || labels[doc.status]));
+              }
+            } catch (error) {
+              if (error.name === 'AbortError') throw error;
+              failed++;
+              errors.push(file.name + '：' + error.message);
+            }
+          }
+          state.offset = 0;
+          $('files').value = '';
+          await refreshBases();
+          notify(
+            '上传完成：' +
+              ready +
+              ' 份就绪，' +
+              pending +
+              ' 份处理中，' +
+              failed +
+              ' 份失败。相同文件在同一库中自动去重。' +
+              (errors.length ? '\n' + errors.join('\n') : ''),
+            failed > 0,
+          );
+        });
+      $('ask').onclick = () =>
+        run(async () => {
+          $('answer').textContent = '';
+          $('sources').replaceChildren();
+          const payload = { question: $('question').value, limit: 3 };
+          if ($('qaBase').value) payload.base_id = $('qaBase').value;
+          const result = await api('/knowledge/ask', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          $('answer').textContent = result.answer;
+          result.citations.forEach((source, index) => {
+            const box = text('div', '', 'source');
+            box.append(
+              text(
+                'strong',
+                '[' +
+                  (index + 1) +
+                  '] ' +
+                  source.file_name +
+                  ' · v' +
+                  source.version_number +
+                  ' · ' +
+                  (source.page_number === null
+                    ? '页码不适用'
+                    : '来源页 ' +
+                      (source.source_pages?.length
+                        ? source.source_pages.join('、')
+                        : source.page_number)),
+              ),
+              text('pre', source.excerpt),
+              text('small', '版本 ' + source.version_id + ' · 原文 SHA-256 ' + source.content_hash),
+            );
+            if (source.document_id) {
+              const button = text('button', '打开引用原文');
+              button.onclick = () => recordRun(() => openRecord(source.document_id, source));
+              box.append(button);
+            }
+            $('sources').append(box);
+          });
+          notify('已从当前可访问、未归档的资料中检索原文。');
+        });
+      $('contractForm').onsubmit = (event) => {
+        event.preventDefault();
+        run(async () => {
+          const id = $('contractId').value.trim();
+          if (!/^[0-9a-f-]{36}$/i.test(id)) throw new Error('请输入有效合同 UUID');
+          const result = await api('/contracts/' + encodeURIComponent(id));
+          $('contractResult').textContent = JSON.stringify(result, null, 2);
+        });
+      };
+      $('loadTasks').onclick = () =>
+        run(async () => {
+          const tasks = await api('/approval-tasks?limit=50');
+          $('approvalResult').textContent = tasks.length
+            ? JSON.stringify(tasks, null, 2)
+            : '当前身份暂无审批待办。';
+        });
+      setInterval(() => {
+        if (state.connected && !state.busy && state.docs.some((doc) => doc.status === 'PARSING'))
+          run(async () => {
+            if (state.session?.inspector_configured && writer())
+              for (const doc of state.docs.filter((doc) => doc.status === 'PARSING')) {
+                try {
+                  await api('/knowledge/documents/' + doc.id + ':sync', { method: 'POST' });
+                } catch (error) {
+                  if (error.name === 'AbortError') throw error;
+                }
+              }
+            await loadDocuments();
+          });
+      }, 5000);
+      controls();
+    </script>
+    <script src="/workspace-business.js"></script>
+  </body>
+</html>

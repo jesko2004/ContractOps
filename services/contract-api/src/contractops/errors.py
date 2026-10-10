@@ -82,7 +82,11 @@ def install_error_handlers(application: FastAPI) -> None:
             status_code=422,
             code="request_validation_error",
             message="request validation failed",
-            details=exc.errors(),
+            # Validation context can contain exception objects; never echo input bodies.
+            details=[
+                {key: error[key] for key in ("type", "loc", "msg") if key in error}
+                for error in exc.errors()
+            ],
         )
 
     @application.exception_handler(StarletteHTTPException)

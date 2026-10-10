@@ -1,0 +1,101 @@
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKeyConstraint,
+    Integer,
+    LargeBinary,
+    MetaData,
+    String,
+    Table,
+    Text,
+    UniqueConstraint,
+    Uuid,
+    true,
+)
+
+metadata = MetaData()
+bases = Table(
+    "knowledge_bases",
+    metadata,
+    Column("id", Uuid, primary_key=True),
+    Column("tenant_id", Uuid, nullable=False),
+    Column("name", String(100), nullable=False),
+    Column("description", Text, nullable=False),
+    Column("department_id", Uuid, nullable=False),
+    Column("created_by", Uuid, nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+    Column("updated_at", DateTime(timezone=True), nullable=False),
+    UniqueConstraint("tenant_id", "id"),
+    UniqueConstraint("tenant_id", "created_by", "name"),
+)
+documents = Table(
+    "knowledge_documents",
+    metadata,
+    Column("id", Uuid, primary_key=True),
+    Column("tenant_id", Uuid, nullable=False),
+    Column("base_id", Uuid, nullable=False),
+    Column("version_id", Uuid, nullable=False),
+    Column("root_id", Uuid),
+    Column("version_number", Integer, nullable=False, server_default="1"),
+    Column("is_current", Boolean, nullable=False, server_default=true()),
+    Column("parse_details", JSON),
+    Column("file_name", String(255), nullable=False),
+    Column("document_type", String(20), nullable=False),
+    Column("media_type", String(150), nullable=False),
+    Column("size_bytes", Integer, nullable=False),
+    Column("file_hash", String(64), nullable=False),
+    Column("original", LargeBinary),
+    Column("status", String(20), nullable=False),
+    Column("state_version", Integer, nullable=False),
+    Column("created_by", Uuid, nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+    Column("updated_at", DateTime(timezone=True), nullable=False),
+    Column("lease_expires_at", DateTime(timezone=True)),
+    Column("error_code", String(100)),
+    Column("error_message", Text),
+    UniqueConstraint("tenant_id", "id"),
+    UniqueConstraint("tenant_id", "base_id", "file_hash"),
+    ForeignKeyConstraint(
+        ["tenant_id", "base_id"], ["knowledge_bases.tenant_id", "knowledge_bases.id"]
+    ),
+)
+chunks = Table(
+    "knowledge_document_chunks",
+    metadata,
+    Column("id", Uuid, primary_key=True),
+    Column("tenant_id", Uuid, nullable=False),
+    Column("document_id", Uuid, nullable=False),
+    Column("sequence", Integer, nullable=False),
+    Column("page_number", Integer),
+    Column("heading_path", JSON, nullable=False),
+    Column("content", Text, nullable=False),
+    Column("content_hash", String(64), nullable=False),
+    Column("source_pages", JSON),
+    Column("source_id", String(100)),
+    Column("kind", String(30)),
+    UniqueConstraint("tenant_id", "document_id", "sequence"),
+    ForeignKeyConstraint(
+        ["tenant_id", "document_id"], ["knowledge_documents.tenant_id", "knowledge_documents.id"]
+    ),
+)
+
+inspector_jobs = Table(
+    "knowledge_inspector_jobs",
+    metadata,
+    Column("document_id", Uuid, primary_key=True),
+    Column("tenant_id", Uuid, nullable=False),
+    Column("endpoint", String(500), nullable=False),
+    Column("profile_id", String(100), nullable=False),
+    Column("request_key", String(100), nullable=False),
+    Column("task_id", String(100)),
+    Column("status", String(30), nullable=False),
+    Column("progress", Integer, nullable=False),
+    Column("error_code", String(100)),
+    Column("updated_at", DateTime(timezone=True), nullable=False),
+    UniqueConstraint("tenant_id", "request_key"),
+    ForeignKeyConstraint(
+        ["tenant_id", "document_id"], ["knowledge_documents.tenant_id", "knowledge_documents.id"]
+    ),
+)

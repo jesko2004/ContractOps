@@ -5,9 +5,15 @@ from collections.abc import Sequence
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
 
-SCHEMA_REVISION = "20260929_0008"
+SCHEMA_REVISION = "20261009_0011"
 
 API_PRIVILEGES: dict[str, tuple[str, ...]] = {
+    "workspace_contract_documents": ("SELECT", "INSERT", "UPDATE"),
+    "workspace_review_reports": ("SELECT", "INSERT"),
+    "knowledge_inspector_jobs": ("SELECT", "INSERT", "UPDATE"),
+    "knowledge_bases": ("SELECT", "INSERT", "UPDATE"),
+    "knowledge_documents": ("SELECT", "INSERT", "UPDATE"),
+    "knowledge_document_chunks": ("SELECT", "INSERT", "DELETE"),
     "contracts": ("SELECT", "INSERT", "UPDATE"),
     "contract_versions": ("SELECT", "INSERT", "UPDATE"),
     "ingestion_jobs": ("SELECT", "INSERT"),
