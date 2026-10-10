@@ -58,13 +58,11 @@ async function main() {
       name,
     );
     await page.locator('#uploadType').selectOption('POLICY');
-    await page
-      .locator('#files')
-      .setInputFiles({
-        name: 'payment-policy.docx',
-        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        buffer: fixture,
-      });
+    await page.locator('#files').setInputFiles({
+      name: 'payment-policy.docx',
+      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      buffer: fixture,
+    });
     await page.locator('#upload').click();
     await page.locator('#documentRows .badge.READY').waitFor();
     assert.equal(await page.locator('#documentCount').textContent(), '1');
@@ -81,13 +79,11 @@ async function main() {
     assert.match(await page.locator('#recordFullText').textContent(), /Payment due in 30 days/);
     assert.equal(await page.locator('#recordVersions option').count(), 1);
     const previousId = await page.locator('#recordVersions').inputValue();
-    await page
-      .locator('#versionFile')
-      .setInputFiles({
-        name: 'payment-policy-v2.docx',
-        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        buffer: makeFixture(45),
-      });
+    await page.locator('#versionFile').setInputFiles({
+      name: 'payment-policy-v2.docx',
+      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      buffer: makeFixture(45),
+    });
     await page.locator('#uploadVersion').click();
     await page.waitForFunction(
       () => document.querySelectorAll('#recordVersions option').length === 2,
@@ -141,13 +137,11 @@ async function main() {
     await page.locator('#ask').click();
     await page.waitForFunction(() => !document.querySelector('#sources .source'));
     await page.locator('[data-view=knowledge]').click();
-    await page
-      .locator('#files')
-      .setInputFiles({
-        name: 'broken.docx',
-        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        buffer: Buffer.from('invalid docx'),
-      });
+    await page.locator('#files').setInputFiles({
+      name: 'broken.docx',
+      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      buffer: Buffer.from('invalid docx'),
+    });
     await page.locator('#upload').click();
     await page.locator('#documentRows .badge.FAILED').waitFor();
     await page.locator('#documentRows').getByRole('button', { name: '重试' }).click();
