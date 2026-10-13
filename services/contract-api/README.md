@@ -37,6 +37,68 @@ validated model output is stored only as a draft document finding for later huma
 
 ## Development
 
+### Local knowledge-base MVP (no Docker or model required)
+
+From the repository root on Windows:
+
+```powershell
+& .\services\contract-api\.venv\Scripts\python.exe .\services\contract-api\scripts\knowledge_demo.py
+```
+
+Open `http://127.0.0.1:8081` and paste the temporary bearer token printed in the terminal.
+Create a named knowledge base, upload text PDF/DOCX documents, filter by category or processing
+status, browse actual persisted text fragments, retry failures, and archive documents.
+The detail dialog includes full parsed text, source chunks, immutable revision/history selection,
+and PDF source-page preview when the optional Inspector service is configured. New revisions
+replace the current searchable version atomically without deleting old evidence.
+Knowledge Q&A searches the same authorized records and returns cited source excerpts.
+The ignored `data/knowledge-demo.sqlite3` database now retains bounded original files as well as
+text and metadata so retries are reproducible. Legacy demo tables are imported once without deletion.
+
+The launcher and `contractops.main:app` use the **same application factory, workspace HTML and
+management/retrieval services**, with explicit SQLite/PostgreSQL storage adapters. Both serve the
+workspace at `/`, with authenticated `/v1/knowledge/bases`, base-scoped document upload/list,
+document metadata/text-fragment reads, retry/archive actions, search, and extractive Q&A.
+Local SQLite mode now supports persisted contracts, existing-document links, manual amount/date
+checks, version comparisons, advisory pre-review and human approval using the existing services.
+Owner/reviewer switching is explicitly a local demonstration, not enterprise authentication.
+The repository's original OpenMAIC Next.js frontend is unchanged.
+
+PostgreSQL requires migration `20261009_0011` and updated API runtime-role grants. The new managed
+knowledge tables have forced tenant RLS; explicit owner/department/tenant filters run before
+ranking or pagination. Existing contract evidence remains in the original tables and participates
+in all-source retrieval only when the current contract version is `READY`; no copying is required.
+Answers default to `EXTRACTIVE`. Opt-in `CONTRACTOPS_KNOWLEDGE_MODEL_ENABLED=true` enables a bounded
+compatible chat-completions client using `CONTRACTOPS_MODEL_BASE_URL`, `CONTRACTOPS_DOCUMENT_MODEL_NAME`,
+optional backend-only `CONTRACTOPS_KNOWLEDGE_MODEL_API_KEY` and a bounded timeout. Each model claim
+must contain a verified source quote; failures explicitly fall back to excerpts. No model is
+configured on this machine, and vector retrieval is not implemented.
+
+Optional Inspector integration uses `CONTRACTOPS_INSPECTOR_URL`, `CONTRACTOPS_INSPECTOR_API_KEY`,
+`CONTRACTOPS_INSPECTOR_PROFILE_ID` (default `manual_query`), and `CONTRACTOPS_INSPECTOR_TIMEOUT_SECONDS`.
+The local launcher accepts `--inspector-url` and `--inspector-key-file`. The companion
+`scripts/inspector_local.py --repo <inspector-checkout>` must run in an already configured Inspector
+Python environment; it does not install or modify the other project. Runtime files and the service
+key remain under ignored `data/inspector-local`; OCR is disabled by default.
+
+Managed PDFs get durable version-bound task associations, stable idempotency keys, progress sync,
+bounded result mapping, full source-page lists, table evidence, and explicit `NEEDS_REVIEW` quality.
+The browser only calls the authenticated main backend, including proxied page PNGs. Inspector does
+the asynchronous processing; authorized page polling/manual sync persists completion in ContractOps.
+There is no new always-running task worker, and closing the page may delay local result persistence.
+DOCX keeps its existing parser. The workbench can link these managed documents to a contract without
+re-uploading originals; the original business ingestion Worker is not wired to this adapter.
+Inspector quality readiness is not an approval or compliance conclusion. Pre-review version
+fingerprints invalidate changed evidence; final decisions remain human, with atomic local contract
+and approval state updates. This is not a production PostgreSQL validation claim.
+
+See [the MVP guide](../../architecture/CONTRACTOPS-KNOWLEDGE-MVP.md) for limits, API examples,
+verification, and the boundary between the local demo and the main service.
+See [the workbench MVP guide](../../architecture/CONTRACTOPS-WORKBENCH-MVP.md) for items 5–8,
+model configuration, interview demonstration steps and verification limits.
+
+### Full backend development
+
 ```bash
 python -m venv .venv
 .venv/Scripts/pip install -e ".[dev]"

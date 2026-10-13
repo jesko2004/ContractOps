@@ -68,6 +68,13 @@ class Settings(BaseSettings):
     document_model_assistance_enabled: bool = False
     document_model_name: str = "qwen-plus"
     model_base_url: str = "http://localhost:4000/v1"
+    knowledge_model_enabled: bool = False
+    knowledge_model_api_key: str | None = Field(default=None, repr=False)
+    knowledge_model_timeout_seconds: float = Field(default=15, ge=1, le=60)
+    inspector_url: str | None = None
+    inspector_api_key: str | None = Field(default=None, repr=False)
+    inspector_profile_id: str = "manual_query"
+    inspector_timeout_seconds: float = Field(default=10, ge=1, le=60)
 
     @model_validator(mode="after")
     def reject_unsafe_production_configuration(self) -> Self:

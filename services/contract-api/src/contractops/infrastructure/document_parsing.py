@@ -35,6 +35,9 @@ class ParsedBlock:
     page_number: int | None
     heading_path: tuple[str, ...]
     content: str
+    source_pages: tuple[int, ...] = ()
+    source_id: str | None = None
+    kind: str = "text"
 
 
 @dataclass(frozen=True, slots=True)

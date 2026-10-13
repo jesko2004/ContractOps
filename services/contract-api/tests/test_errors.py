@@ -1,8 +1,32 @@
 from fastapi import APIRouter
 from fastapi.testclient import TestClient
+from pydantic import BaseModel, model_validator
 
 from contractops.errors import ContractOpsError
 from contractops.main import create_app
+
+
+class InvalidScope(BaseModel):
+    secret: str
+
+    @model_validator(mode="after")
+    def check_scope(self) -> "InvalidScope":
+        raise ValueError("invalid scope")
+
+
+def test_validator_exception_returns_422_without_echoing_input() -> None:
+    app = create_app()
+
+    @app.post("/test/validation")
+    async def validate(body: InvalidScope) -> None:
+        pass
+
+    with TestClient(app) as client:
+        response = client.post("/test/validation", json={"secret": "private-input-value"})
+    assert response.status_code == 422
+    assert response.json()["error"]["details"][0]["type"] == "value_error"
+    assert "private-input-value" not in response.text
+    assert "ctx" not in response.text
 
 
 def test_domain_error_uses_stable_envelope_and_request_id() -> None:

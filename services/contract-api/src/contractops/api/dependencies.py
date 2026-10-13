@@ -11,6 +11,8 @@ from contractops.application.audits import AuditService
 from contractops.application.contracts import ContractService
 from contractops.application.documents import DocumentService
 from contractops.application.events import EventAdminService
+from contractops.application.knowledge import KnowledgeService
+from contractops.application.knowledge_management import KnowledgeManagementService
 from contractops.application.obligations import ObligationService
 from contractops.auth import JWTDecoder
 from contractops.context import (
@@ -44,7 +46,14 @@ async def authenticated_actor(
 
 
 def get_contract_service(request: Request) -> ContractService:
-    return cast(ContractService, request.app.state.contract_service)
+    service = getattr(request.app.state, "contract_service", None)
+    if not isinstance(service, ContractService):
+        raise ContractOpsError(
+            code="contract_service_unavailable",
+            message="合同业务需要 PostgreSQL 模式。",
+            status_code=503,
+        )
+    return service
 
 
 def get_document_service(request: Request) -> DocumentService:
@@ -58,8 +67,37 @@ def get_document_service(request: Request) -> DocumentService:
     return service
 
 
+def get_knowledge_service(request: Request) -> KnowledgeService:
+    service = getattr(request.app.state, "knowledge_service", None)
+    if not isinstance(service, KnowledgeService):
+        raise ContractOpsError(
+            code="knowledge_service_unavailable",
+            message="contract knowledge is not configured",
+            status_code=503,
+        )
+    return service
+
+
+def get_knowledge_management_service(request: Request) -> KnowledgeManagementService:
+    service = getattr(request.app.state, "knowledge_management_service", None)
+    if not isinstance(service, KnowledgeManagementService):
+        raise ContractOpsError(
+            code="knowledge_management_unavailable",
+            message="knowledge management is not configured",
+            status_code=503,
+        )
+    return service
+
+
 def get_approval_service(request: Request) -> ApprovalService:
-    return cast(ApprovalService, request.app.state.approval_service)
+    service = getattr(request.app.state, "approval_service", None)
+    if not isinstance(service, ApprovalService):
+        raise ContractOpsError(
+            code="approval_service_unavailable",
+            message="审批业务需要 PostgreSQL 模式。",
+            status_code=503,
+        )
+    return service
 
 
 def get_event_admin_service(request: Request) -> EventAdminService:
